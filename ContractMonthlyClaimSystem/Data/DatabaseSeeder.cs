@@ -61,7 +61,7 @@ namespace ContractMonthlyClaimSystem.Data
             }
 
             // Create users with roles
-            await CreateUserWithRole("admin@cmcs.app", "Admin!!1", "Admin", deleteIfExists: true);
+            await CreateUserWithRole("admin@cmcs.app", "Admin!!1", "Admin");
             await CreateUserWithRole("lecturer@cmcs.app", "Lecturer!!1", "Lecturer");
             await CreateUserWithRole("programcoordinator@cmcs.app", "ProgramCoordinator!!1", "ProgramCoordinator");
             await CreateUserWithRole("academicmanager@cmcs.app", "AcademicManager!!1", "AcademicManager");
