@@ -1,6 +1,11 @@
+using ContractMonthlyClaimSystem.Areas.Identity.Data;
+using ContractMonthlyClaimSystem.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 internal class Program
 {
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
         // Set DataDirectory to current directory so we can easily find and use our LocalDatabase.mdf
         AppDomain.CurrentDomain.SetData("DataDirectory", Directory.GetCurrentDirectory());
@@ -10,7 +15,21 @@ internal class Program
         // Add services to the container.
         builder.Services.AddControllersWithViews();
 
+        // Add identity with roles
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+        builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+        builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true)
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>();
+
         var app = builder.Build();
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            await DatabaseSeeder.SeedRolesAndUsers(services);
+        }
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())
@@ -25,11 +44,13 @@ internal class Program
 
         app.UseRouting();
 
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllerRoute(
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
+        app.MapRazorPages();
 
         app.Run();
     }
