@@ -18,11 +18,14 @@ namespace ContractMonthlyClaimSystem.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "8.0.19")
+                .HasAnnotation("Proxies:ChangeTracking", false)
+                .HasAnnotation("Proxies:CheckEquality", false)
+                .HasAnnotation("Proxies:LazyLoading", true)
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ContractMonthlyClaimSystem.Areas.Identity.Data.AppUser", b =>
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.AppUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -85,6 +88,100 @@ namespace ContractMonthlyClaimSystem.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ContractClaim", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool?>("AcademicManagerAccepted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("AcademicManagerComment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AcademicManagerUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ClaimStatus")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("HourlyRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("HoursWorked")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("LecturerComment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LecturerUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ModuleId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("ProgramCoordinatorAccepted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ProgramCoordinatorComment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProgramCoordinatorUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcademicManagerUserId");
+
+                    b.HasIndex("LecturerUserId");
+
+                    b.HasIndex("ModuleId");
+
+                    b.HasIndex("ProgramCoordinatorUserId");
+
+                    b.ToTable("ContractClaims");
+                });
+
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerModule", b =>
+                {
+                    b.Property<string>("LecturerUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ModuleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LecturerUserId", "ModuleId");
+
+                    b.HasIndex("ModuleId");
+
+                    b.ToTable("LecturerModules");
+                });
+
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.Module", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Modules");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -224,6 +321,56 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ContractClaim", b =>
+                {
+                    b.HasOne("ContractMonthlyClaimSystem.Models.AppUser", "AcademicManagerUser")
+                        .WithMany()
+                        .HasForeignKey("AcademicManagerUserId");
+
+                    b.HasOne("ContractMonthlyClaimSystem.Models.AppUser", "LecturerUser")
+                        .WithMany()
+                        .HasForeignKey("LecturerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ContractMonthlyClaimSystem.Models.Module", "Module")
+                        .WithMany()
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ContractMonthlyClaimSystem.Models.AppUser", "ProgramCoordinatorUser")
+                        .WithMany()
+                        .HasForeignKey("ProgramCoordinatorUserId");
+
+                    b.Navigation("AcademicManagerUser");
+
+                    b.Navigation("LecturerUser");
+
+                    b.Navigation("Module");
+
+                    b.Navigation("ProgramCoordinatorUser");
+                });
+
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerModule", b =>
+                {
+                    b.HasOne("ContractMonthlyClaimSystem.Models.AppUser", "LecturerUser")
+                        .WithMany()
+                        .HasForeignKey("LecturerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ContractMonthlyClaimSystem.Models.Module", "Module")
+                        .WithMany()
+                        .HasForeignKey("ModuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LecturerUser");
+
+                    b.Navigation("Module");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -235,7 +382,7 @@ namespace ContractMonthlyClaimSystem.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("ContractMonthlyClaimSystem.Areas.Identity.Data.AppUser", null)
+                    b.HasOne("ContractMonthlyClaimSystem.Models.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -244,7 +391,7 @@ namespace ContractMonthlyClaimSystem.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("ContractMonthlyClaimSystem.Areas.Identity.Data.AppUser", null)
+                    b.HasOne("ContractMonthlyClaimSystem.Models.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -259,7 +406,7 @@ namespace ContractMonthlyClaimSystem.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ContractMonthlyClaimSystem.Areas.Identity.Data.AppUser", null)
+                    b.HasOne("ContractMonthlyClaimSystem.Models.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -268,7 +415,7 @@ namespace ContractMonthlyClaimSystem.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("ContractMonthlyClaimSystem.Areas.Identity.Data.AppUser", null)
+                    b.HasOne("ContractMonthlyClaimSystem.Models.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

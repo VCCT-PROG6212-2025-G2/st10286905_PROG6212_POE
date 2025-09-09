@@ -1,5 +1,5 @@
-using ContractMonthlyClaimSystem.Areas.Identity.Data;
 using ContractMonthlyClaimSystem.Data;
+using ContractMonthlyClaimSystem.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
@@ -23,12 +23,15 @@ internal class Program
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
+        // Add database seeder as scoped service
+        builder.Services.AddScoped<DatabaseSeeder>();
+
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())
         {
-            var services = scope.ServiceProvider;
-            await DatabaseSeeder.SeedRolesAndUsers(services);
+            var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+            await seeder.Seed();
         }
 
         // Configure the HTTP request pipeline.
