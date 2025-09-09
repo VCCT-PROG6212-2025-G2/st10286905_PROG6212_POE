@@ -30,13 +30,13 @@
                             @if (User.IsInRole("Lecturer"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Lecturer" asp-action="Index">Lecturer Dashboard</a>
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Lecturer" asp-action="Index">Claims Dashboard</a>
                                 </li>
                             }
                             @if (User.IsInRole("ProgramCoordinator"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="ProgramCoordinator" asp-action="Index">Program Coordinator Dashboard</a>
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="ProgramCoordinator" asp-action="Index">Claims Dashboard</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-controller="ProgramCoordinator" asp-action="ManageLecturers">Manage Lecturers</a>
@@ -45,7 +45,7 @@
                             @if (User.IsInRole("AcademicManager"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="AcademicManager" asp-action="Index">Academic Manager Dashboard</a>
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="AcademicManager" asp-action="Index">Claims Dashboard</a>
                                 </li>
                             }
                         }
