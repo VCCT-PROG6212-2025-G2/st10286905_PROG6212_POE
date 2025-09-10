@@ -24,6 +24,6 @@
         public bool? AcademicManagerAccepted { get; set; }
         public string? AcademicManagerComment { get; set; }
 
-        public ClaimStatus ClaimStatus { get; set; }
+        public ClaimStatus ClaimStatus { get; set; } = ClaimStatus.PENDING;
     }
 }
