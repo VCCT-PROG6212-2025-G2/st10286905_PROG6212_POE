@@ -1,5 +1,6 @@
 using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models;
+using ContractMonthlyClaimSystem.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
@@ -27,6 +28,9 @@ internal class Program
 
         // Add database seeder as scoped service
         builder.Services.AddScoped<DatabaseSeeder>();
+
+        // Add helper services
+        builder.Services.AddScoped<LecturerService>();
 
         var app = builder.Build();
 
