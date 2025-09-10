@@ -38,14 +38,17 @@
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-controller="ProgramCoordinator" asp-action="Index">Claims Dashboard</a>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="ProgramCoordinator" asp-action="ManageLecturers">Manage Lecturers</a>
-                                </li>
                             }
                             @if (User.IsInRole("AcademicManager"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-controller="AcademicManager" asp-action="Index">Claims Dashboard</a>
+                                </li>
+                            }
+                            @if(User.IsInRole("Admin") || User.IsInRole("ProgramCoordinator"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="LecturerModuleManager" asp-action="Index">Manage Lecturer Modules</a>
                                 </li>
                             }
                         }
