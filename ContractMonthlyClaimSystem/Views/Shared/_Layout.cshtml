@@ -45,7 +45,13 @@
                                     <a class="nav-link text-dark" asp-area="" asp-controller="AcademicManager" asp-action="Index">Claims Dashboard</a>
                                 </li>
                             }
-                            @if(User.IsInRole("Admin") || User.IsInRole("ProgramCoordinator"))
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="UserRoleManager" asp-action="Index">Manage User Roles</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Admin") || User.IsInRole("ProgramCoordinator"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-controller="LecturerModuleManager" asp-action="Index">Manage Lecturer Modules</a>
