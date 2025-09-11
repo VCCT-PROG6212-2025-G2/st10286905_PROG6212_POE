@@ -16,7 +16,7 @@ namespace ContractMonthlyClaimSystem.Data
         public DbSet<LecturerModule> LecturerModules { get; set; }
         public DbSet<ContractClaim> ContractClaims { get; set; }
         public DbSet<UploadedFile> UploadedFiles { get; set; }
-        public DbSet<ContractClaimDocument> ContractClaimsDocument { get; set; }
+        public DbSet<ContractClaimDocument> ContractClaimsDocuments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
