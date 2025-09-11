@@ -1,4 +1,4 @@
-﻿namespace ContractMonthlyClaimSystem.Models
+﻿namespace ContractMonthlyClaimSystem.Models.ViewModels
 {
     public class UserRolesViewModel
     {

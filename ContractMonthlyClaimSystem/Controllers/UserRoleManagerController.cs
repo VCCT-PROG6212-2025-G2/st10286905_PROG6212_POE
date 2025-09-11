@@ -1,5 +1,6 @@
 ﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68c17e75-6410-800b-922a-8487a7e06720
 using ContractMonthlyClaimSystem.Models;
+using ContractMonthlyClaimSystem.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
