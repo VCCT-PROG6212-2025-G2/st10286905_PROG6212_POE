@@ -148,6 +148,21 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.ToTable("ContractClaims");
                 });
 
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ContractClaimDocument", b =>
+                {
+                    b.Property<int>("ContractClaimId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UploadedFileId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ContractClaimId", "UploadedFileId");
+
+                    b.HasIndex("UploadedFileId");
+
+                    b.ToTable("ContractClaimsDocument");
+                });
+
             modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerModule", b =>
                 {
                     b.Property<string>("LecturerUserId")
@@ -182,6 +197,33 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Modules");
+                });
+
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.UploadedFile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UploadedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UploadedFiles");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -350,6 +392,25 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.Navigation("Module");
 
                     b.Navigation("ProgramCoordinatorUser");
+                });
+
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ContractClaimDocument", b =>
+                {
+                    b.HasOne("ContractMonthlyClaimSystem.Models.ContractClaim", "ContractClaim")
+                        .WithMany()
+                        .HasForeignKey("ContractClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ContractMonthlyClaimSystem.Models.UploadedFile", "UploadedFile")
+                        .WithMany()
+                        .HasForeignKey("UploadedFileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ContractClaim");
+
+                    b.Navigation("UploadedFile");
                 });
 
             modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerModule", b =>
