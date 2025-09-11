@@ -1,0 +1,83 @@
+﻿@model LecturerClaimsViewModel
+
+<h2>My Claims</h2>
+
+<p>
+    <a asp-action="CreateClaim" class="btn btn-success">+ Create New Claim</a>
+</p>
+
+<h3>Pending Claims</h3>
+@if (Model.PendingClaims.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Module</th>
+                <th>Hours Worked</th>
+                <th>Hourly Rate</th>
+                <th>Status</th>
+                <th>Comment</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var claim in Model.PendingClaims)
+            {
+                <tr>
+                    <td>@claim.ModuleName</td>
+                    <td>@claim.HoursWorked</td>
+                    <td>@claim.HourlyRate.ToString("C")</td>
+                    <td>@claim.ClaimStatus</td>
+                    <td>@claim.LecturerComment</td>
+                    <td>
+                        <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-primary">
+                            View Details
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p><em>No pending claims.</em></p>
+}
+
+<h3>Completed Claims</h3>
+@if (Model.CompletedClaims.Any())
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Module</th>
+                <th>Hours Worked</th>
+                <th>Hourly Rate</th>
+                <th>Status</th>
+                <th>Comment</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var claim in Model.CompletedClaims)
+            {
+                <tr>
+                    <td>@claim.ModuleName</td>
+                    <td>@claim.HoursWorked</td>
+                    <td>@claim.HourlyRate.ToString("C")</td>
+                    <td>@claim.ClaimStatus</td>
+                    <td>@claim.LecturerComment</td>
+                    <td>
+                        <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-primary">
+                            View Details
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p><em>No completed claims.</em></p>
+}
