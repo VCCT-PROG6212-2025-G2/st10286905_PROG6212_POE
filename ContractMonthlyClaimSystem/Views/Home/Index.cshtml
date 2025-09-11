@@ -3,6 +3,22 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    
+    @if (User.Identity.IsAuthenticated)
+    {
+        <h1 class="display-4">Welcome, @User.Identity.Name</h1>
+        if (User.IsInRole("Lecturer") || User.IsInRole("ProgramCoordinator") || User.IsInRole("AcademicManager"))
+        {
+            <p>Use the navigation bar to access your dashboard.</p>
+        }
+        else
+        {
+            <p>An administrator must first complete your account setup before you may access application functionality.</p>
+        }
+    }
+    else
+    {
+        <h1 class="display-4">Welcome</h1>
+        <p>Login to access application functionality.</p>
+    }
 </div>

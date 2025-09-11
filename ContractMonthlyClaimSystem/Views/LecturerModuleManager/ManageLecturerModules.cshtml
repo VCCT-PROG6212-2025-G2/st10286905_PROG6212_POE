@@ -1,0 +1,35 @@
+﻿@model ManageLecturerModulesViewModel
+
+<h2>Manage Modules for @Model.LecturerName</h2>
+
+<h3>Assigned Modules</h3>
+<ul>
+    @foreach (var module in Model.AllModules.Where(m => Model.AssignedModuleIds.Contains(m.Id)))
+    {
+        <li>
+            @module.Name
+            <form asp-action="RemoveLecturerModule" method="post" style="display:inline">
+                <input type="hidden" name="lecturerId" value="@Model.LecturerId" />
+                <input type="hidden" name="moduleId" value="@module.Id" />
+                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+            </form>
+        </li>
+    }
+</ul>
+
+<h3>Available Modules</h3>
+<ul>
+    @foreach (var module in Model.AllModules.Where(m => !Model.AssignedModuleIds.Contains(m.Id)))
+    {
+        <li>
+            @module.Name
+            <form asp-action="AddLecturerModule" method="post" style="display:inline">
+                <input type="hidden" name="lecturerId" value="@Model.LecturerId" />
+                <input type="hidden" name="moduleId" value="@module.Id" />
+                <button type="submit" class="btn btn-success btn-sm">Assign</button>
+            </form>
+        </li>
+    }
+</ul>
+
+<a asp-action="Index" class="btn btn-secondary">Back to List</a>

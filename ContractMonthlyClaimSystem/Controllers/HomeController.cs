@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using ContractMonthlyClaimSystem.Models;
+using ContractMonthlyClaimSystem.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ContractMonthlyClaimSystem.Controllers

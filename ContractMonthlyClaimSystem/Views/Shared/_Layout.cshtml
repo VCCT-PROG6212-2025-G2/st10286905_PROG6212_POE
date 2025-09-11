@@ -25,7 +25,41 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            @if (User.IsInRole("Lecturer"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Lecturer" asp-action="Index">Claims Dashboard</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("ProgramCoordinator"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="ProgramCoordinator" asp-action="Index">Claims Dashboard</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("AcademicManager"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="AcademicManager" asp-action="Index">Claims Dashboard</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="UserRoleManager" asp-action="Index">Manage User Roles</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Admin") || User.IsInRole("ProgramCoordinator"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="LecturerModuleManager" asp-action="Index">Manage Lecturer Modules</a>
+                                </li>
+                            }
+                        }
                     </ul>
+                    <partial name="_LoginPartial" />
                 </div>
             </div>
         </nav>

@@ -1,0 +1,64 @@
+﻿@using Microsoft.AspNetCore.Identity
+@model List<UserRolesViewModel>
+@{
+    ViewBag.Title = "User Role Manager";
+    var roles = ViewBag.AllRoles as List<IdentityRole>;
+}
+
+<h2>User Role Manager</h2>
+
+<h3>Users and their roles</h3>
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>User</th>
+            <th>Roles</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.UserName</td>
+                <td>@string.Join(", ", user.Roles)</td>
+                <td>
+                    <a asp-action="Manage" asp-route-userId="@user.UserId" class="btn btn-sm btn-primary">Manage Roles</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h3>Existing Roles</h3>
+<table class="table table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Role Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var role in roles)
+        {
+            <tr>
+                <td>@role.Name</td>
+                <td>
+                    <form asp-action="DeleteRole" method="post" style="display:inline">
+                        <input type="hidden" name="roleName" value="@role.Name" />
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<form asp-action="AddRole" method="post" class="mt-3 row g-2">
+    <div class="col-auto">
+        <input type="text" name="roleName" placeholder="New role name" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-success">Add Role</button>
+    </div>
+</form>

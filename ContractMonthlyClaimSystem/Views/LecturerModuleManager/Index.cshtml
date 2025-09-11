@@ -1,0 +1,65 @@
+﻿@model LecturerModuleManagerIndexViewModel
+
+<h2>Lecturers</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Modules</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var lecturer in Model.Lecturers)
+        {
+            <tr>
+                <td>@lecturer.Name</td>
+                <td>@string.Join(", ", lecturer.Modules.Select(m => m.Code))</td>
+                <td>
+                    <a asp-action="ManageLecturerModules" asp-route-id="@lecturer.Id" class="btn btn-primary btn-sm">Manage Modules</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+
+<h2>All Modules</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Module Name</th>
+            <th>Module Code</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var module in Model.Modules)
+        {
+            <tr>
+                <td>@module.Name</td>
+                <td>@module.Code</td>
+                <td>
+                    <form asp-action="DeleteModule" method="post" style="display:inline">
+                        <input type="hidden" name="id" value="@module.Id" />
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h3>Add New Module</h3>
+<form asp-action="CreateModule" method="post">
+    <div class="form-group">
+        <input asp-for="NewModule.Name" class="form-control" placeholder="Module name" />
+    </div>
+    <div class="form-group">
+        <input asp-for="NewModule.Code" class="form-control" placeholder="Module code" />
+    </div>
+    <button type="submit" class="btn btn-success">Add Module</button>
+</form>
