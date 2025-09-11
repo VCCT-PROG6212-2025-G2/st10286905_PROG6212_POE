@@ -57,9 +57,13 @@ namespace ContractMonthlyClaimSystem.Data
                     if (res == IdentityResult.Success)
                         Console.WriteLine($"Created user: {email}");
                 }
-                res = await _userManager.AddToRoleAsync(user, role);
-                if (res == IdentityResult.Success)
-                    Console.WriteLine($"Added user: {email} to role: {role}");
+                user = await _userManager.FindByEmailAsync(email);
+                if (!await _userManager.IsInRoleAsync(user, role))
+                {
+                    res = await _userManager.AddToRoleAsync(user, role);
+                    if (res == IdentityResult.Success)
+                        Console.WriteLine($"Added user: {email} to role: {role}");
+                }
             }
 
             // Create users with roles
@@ -84,6 +88,7 @@ namespace ContractMonthlyClaimSystem.Data
             {
                 if (!await _context.Modules.Where(m => m.Name == module.Name && m.Code == module.Code).AnyAsync())
                     _context.Modules.Add(module);
+                await _context.SaveChangesAsync();
 
                 var lecturerModule = new LecturerModule
                 {
