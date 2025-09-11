@@ -65,6 +65,22 @@ namespace ContractMonthlyClaimSystem.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UploadedFiles",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FileSize = table.Column<long>(type: "bigint", nullable: false),
+                    UploadedOn = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UploadedFiles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -240,6 +256,30 @@ namespace ContractMonthlyClaimSystem.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ContractClaimsDocuments",
+                columns: table => new
+                {
+                    ContractClaimId = table.Column<int>(type: "int", nullable: false),
+                    UploadedFileId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ContractClaimsDocuments", x => new { x.ContractClaimId, x.UploadedFileId });
+                    table.ForeignKey(
+                        name: "FK_ContractClaimsDocuments_ContractClaims_ContractClaimId",
+                        column: x => x.ContractClaimId,
+                        principalTable: "ContractClaims",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ContractClaimsDocuments_UploadedFiles_UploadedFileId",
+                        column: x => x.UploadedFileId,
+                        principalTable: "UploadedFiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -300,6 +340,11 @@ namespace ContractMonthlyClaimSystem.Migrations
                 column: "ProgramCoordinatorUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ContractClaimsDocuments_UploadedFileId",
+                table: "ContractClaimsDocuments",
+                column: "UploadedFileId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_LecturerModules_ModuleId",
                 table: "LecturerModules",
                 column: "ModuleId");
@@ -324,13 +369,19 @@ namespace ContractMonthlyClaimSystem.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "ContractClaims");
+                name: "ContractClaimsDocuments");
 
             migrationBuilder.DropTable(
                 name: "LecturerModules");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "ContractClaims");
+
+            migrationBuilder.DropTable(
+                name: "UploadedFiles");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

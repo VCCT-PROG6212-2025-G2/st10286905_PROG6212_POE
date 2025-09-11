@@ -1,6 +1,7 @@
 ﻿// AI Disclosure: ChatGPT assisted creating this class. Link: https://chatgpt.com/share/68c04c01-77a4-800b-ac30-db12e569f8af
 using ContractMonthlyClaimSystem.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace ContractMonthlyClaimSystem.Data
@@ -23,10 +24,11 @@ namespace ContractMonthlyClaimSystem.Data
 
         public async Task Seed()
         {
-            await SeedRolesAndUsers();
+            await SeedRolesAndUsersAsync();
+            await SeedLecturerModulesAsync();
         }
 
-        public async Task SeedRolesAndUsers()
+        public async Task SeedRolesAndUsersAsync()
         {
             // Create roles if they don't exist
             string[] roles = { "Admin", "Lecturer", "ProgramCoordinator", "AcademicManager" };
@@ -65,6 +67,34 @@ namespace ContractMonthlyClaimSystem.Data
             await CreateUserWithRole("lecturer@cmcs.app", "Lecturer!!1", "Lecturer");
             await CreateUserWithRole("programcoordinator@cmcs.app", "ProgramCoordinator!!1", "ProgramCoordinator");
             await CreateUserWithRole("academicmanager@cmcs.app", "AcademicManager!!1", "AcademicManager");
+        }
+
+        public async Task SeedLecturerModulesAsync()
+        {
+            Module[] modules =
+            [
+                new Module { Name = "Programming 2B", Code = "PROG6212" },
+                new Module { Name = "Cloud Development B", Code = "CLDV6212" },
+                new Module { Name = "Information Systems 2C", Code = "INSY7213" }
+            ];
+
+            var lecturerUser = await _userManager.FindByNameAsync("lecturer@cmcs.app");
+
+            foreach (var module in modules)
+            {
+                if (!await _context.Modules.Where(m => m.Name == module.Name && m.Code == module.Code).AnyAsync())
+                    _context.Modules.Add(module);
+
+                var lecturerModule = new LecturerModule
+                {
+                    LecturerUserId = lecturerUser.Id,
+                    ModuleId = module.Id
+                };
+                if (!await _context.LecturerModules.ContainsAsync(lecturerModule))
+                    _context.LecturerModules.Add(lecturerModule);
+            }
+
+            await _context.SaveChangesAsync();
         }
     }
 }

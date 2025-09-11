@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ContractMonthlyClaimSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250911092743_AddFileModels")]
-    partial class AddFileModels
+    [Migration("20250911165722_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -21,9 +21,6 @@ namespace ContractMonthlyClaimSystem.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "8.0.19")
-                .HasAnnotation("Proxies:ChangeTracking", false)
-                .HasAnnotation("Proxies:CheckEquality", false)
-                .HasAnnotation("Proxies:LazyLoading", true)
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -163,7 +160,7 @@ namespace ContractMonthlyClaimSystem.Migrations
 
                     b.HasIndex("UploadedFileId");
 
-                    b.ToTable("ContractClaimsDocument");
+                    b.ToTable("ContractClaimsDocuments");
                 });
 
             modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerModule", b =>
