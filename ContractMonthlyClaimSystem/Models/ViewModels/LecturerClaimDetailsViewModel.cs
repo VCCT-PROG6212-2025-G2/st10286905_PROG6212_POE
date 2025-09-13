@@ -9,6 +9,6 @@
         public string? LecturerComment { get; set; }
         public ClaimStatus ClaimStatus { get; set; }
 
-        public List<UploadedFile> Files { get; set; } = new();
+        public List<UploadedFile> Files { get; set; } = [];
     }
 }

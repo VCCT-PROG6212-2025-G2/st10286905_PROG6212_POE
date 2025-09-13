@@ -1,0 +1,84 @@
+﻿@model ReviewerClaimDetailsViewModel
+
+@{
+    ViewData["Title"] = "Claim Details";
+}
+
+<h2>Claim Details</h2>
+
+<dl class="row">
+    <dt class="col-sm-3">Lecturer</dt>
+    <dd class="col-sm-9">@Model.LecturerName</dd>
+
+    <dt class="col-sm-3">Module</dt>
+    <dd class="col-sm-9">@Model.ModuleName</dd>
+
+    <dt class="col-sm-3">Hours Worked</dt>
+    <dd class="col-sm-9">@Model.HoursWorked</dd>
+
+    <dt class="col-sm-3">Hourly Rate</dt>
+    <dd class="col-sm-9">@Model.HourlyRate</dd>
+
+    <dt class="col-sm-3">Payment Amount</dt>
+    <dd class="col-sm-9">@Model.PaymentAmount</dd>
+
+    <dt class="col-sm-3">Lecturer Comment</dt>
+    <dd class="col-sm-9">@Model.LecturerComment</dd>
+
+    <dt class="col-sm-3">Program Coordinator</dt>
+    <dd class="col-sm-9">@Model.ProgramCoordinatorName</dd>
+
+    <dt class="col-sm-3">Coordinator Decision</dt>
+    <dd class="col-sm-9">@Model.ProgramCoordinatorAccepted</dd>
+
+    <dt class="col-sm-3">Coordinator Comment</dt>
+    <dd class="col-sm-9">@Model.ProgramCoordinatorComment</dd>
+
+    <dt class="col-sm-3">Academic Manager</dt>
+    <dd class="col-sm-9">@Model.AcademicManagerName</dd>
+
+    <dt class="col-sm-3">Manager Decision</dt>
+    <dd class="col-sm-9">@Model.AcademicManagerAccepted</dd>
+
+    <dt class="col-sm-3">Manager Comment</dt>
+    <dd class="col-sm-9">@Model.AcademicManagerComment</dd>
+
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">@Model.ClaimStatus</dd>
+</dl>
+
+<h4>Files</h4>
+@if (Model.Files.Any())
+{
+    <ul>
+        @foreach (var file in Model.Files)
+        {
+            <li>
+                <a asp-action="DownloadFile" asp-route-id="@file.Id">@file.FileName</a>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No files uploaded.</p>
+}
+
+@if (Model.ClaimStatus <= ClaimStatus.PENDING_CONFIRM && Model.AcademicManagerName == null)
+{
+    <form method="post">
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="form-group">
+            <label for="comment">Comment</label>
+            <textarea name="comment" class="form-control"></textarea>
+        </div>
+
+        <button type="submit" formaction="@Url.Action("AcceptClaim")" class="btn btn-success">
+            Accept
+        </button>
+        <button type="submit" formaction="@Url.Action("RejectClaim")" class="btn btn-danger">
+            Reject
+        </button>
+    </form>
+}

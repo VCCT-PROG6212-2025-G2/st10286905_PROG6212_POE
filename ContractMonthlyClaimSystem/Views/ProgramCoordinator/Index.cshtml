@@ -1,0 +1,94 @@
+﻿@model ReviewerClaimsViewModel
+
+@{
+    ViewData["Title"] = "Program Coordinator - Claims";
+}
+
+<h2>Pending Claims</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Lecturer</th>
+            <th>Module</th>
+            <th>Hours</th>
+            <th>Rate</th>
+            <th>Amount</th>
+            <th>Lecturer Comment</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var claim in Model.PendingClaims)
+        {
+            <tr>
+                <td>@claim.LecturerName</td>
+                <td>@claim.ModuleName</td>
+                <td>@claim.HoursWorked</td>
+                <td>@claim.HourlyRate</td>
+                <td>@claim.PaymentAmount</td>
+                <td>@claim.LecturerComment</td>
+                <td>
+                    <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-primary">Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>Pending Confirmation</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Lecturer</th>
+            <th>Module</th>
+            <th>Program Coordinator</th>
+            <th>Academic Manager</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var claim in Model.PendingConfirmClaims)
+        {
+            <tr>
+                <td>@claim.LecturerName</td>
+                <td>@claim.ModuleName</td>
+                <td>@claim.ProgramCoordinatorName</td>
+                <td>@claim.AcademicManagerName</td>
+                <td>@claim.ClaimStatus</td>
+                <td>
+                    <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-primary">Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>Completed Claims</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Lecturer</th>
+            <th>Module</th>
+            <th>Coordinator Decision</th>
+            <th>Manager Decision</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var claim in Model.CompletedClaims)
+        {
+            <tr>
+                <td>@claim.LecturerName</td>
+                <td>@claim.ModuleName</td>
+                <td>@(claim.ProgramCoordinatorAccepted == true ? "Accepted" : "Rejected")</td>
+                <td>@(claim.AcademicManagerAccepted == true ? "Accepted" : "Rejected")</td>
+                <td>@claim.ClaimStatus</td>
+                <td>
+                    <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-secondary">View</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
