@@ -87,13 +87,16 @@ namespace ContractMonthlyClaimSystem.Data
             foreach (var module in modules)
             {
                 if (!await _context.Modules.Where(m => m.Name == module.Name && m.Code == module.Code).AnyAsync())
+                {
                     _context.Modules.Add(module);
-                await _context.SaveChangesAsync();
+                    await _context.SaveChangesAsync();
+                }
+                var foundModule = await _context.Modules.Where(m => m.Name == module.Name && m.Code == module.Code).FirstAsync();
 
                 var lecturerModule = new LecturerModule
                 {
                     LecturerUserId = lecturerUser.Id,
-                    ModuleId = module.Id
+                    ModuleId = foundModule.Id
                 };
                 if (!await _context.LecturerModules.ContainsAsync(lecturerModule))
                     _context.LecturerModules.Add(lecturerModule);
