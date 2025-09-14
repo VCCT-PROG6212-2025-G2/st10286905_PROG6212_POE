@@ -1,7 +1,6 @@
 ﻿using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.ViewModels;
-using ContractMonthlyClaimSystem.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
