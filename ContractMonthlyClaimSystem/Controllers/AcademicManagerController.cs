@@ -42,17 +42,10 @@ namespace ContractMonthlyClaimSystem.Controllers
                             Id = c.Id,
                             LecturerName = c.LecturerUser.UserName,
                             ModuleName = c.Module.Name,
-                            HoursWorked = c.HoursWorked,
-                            HourlyRate = c.HourlyRate,
                             PaymentAmount = c.HoursWorked * c.HourlyRate,
-                            LecturerComment = c.LecturerComment,
-                            ProgramCoordinatorName = c.ProgramCoordinatorUser?.UserName,
-                            ProgramCoordinatorAccepted = c.ProgramCoordinatorAccepted,
-                            ProgramCoordinatorComment = c.ProgramCoordinatorComment,
-                            AcademicManagerName = c.AcademicManagerUser?.UserName,
-                            AcademicManagerAccepted = c.AcademicManagerAccepted,
-                            AcademicManagerComment = c.AcademicManagerComment,
-                            ClaimStatus = c.ClaimStatus,
+                            ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
+                            AcademicManagerDecision = c.AcademicManagerDecision,
+                            ClaimStatus = c.ClaimStatus
                         }),
                 ],
                 PendingConfirmClaims =
@@ -67,17 +60,10 @@ namespace ContractMonthlyClaimSystem.Controllers
                             Id = c.Id,
                             LecturerName = c.LecturerUser.UserName,
                             ModuleName = c.Module.Name,
-                            HoursWorked = c.HoursWorked,
-                            HourlyRate = c.HourlyRate,
                             PaymentAmount = c.HoursWorked * c.HourlyRate,
-                            LecturerComment = c.LecturerComment,
-                            ProgramCoordinatorName = c.ProgramCoordinatorUser?.UserName,
-                            ProgramCoordinatorAccepted = c.ProgramCoordinatorAccepted,
-                            ProgramCoordinatorComment = c.ProgramCoordinatorComment,
-                            AcademicManagerName = c.AcademicManagerUser?.UserName,
-                            AcademicManagerAccepted = c.AcademicManagerAccepted,
-                            AcademicManagerComment = c.AcademicManagerComment,
-                            ClaimStatus = c.ClaimStatus,
+                            ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
+                            AcademicManagerDecision = c.AcademicManagerDecision,
+                            ClaimStatus = c.ClaimStatus
                         }),
                 ],
                 CompletedClaims =
@@ -89,17 +75,10 @@ namespace ContractMonthlyClaimSystem.Controllers
                             Id = c.Id,
                             LecturerName = c.LecturerUser.UserName,
                             ModuleName = c.Module.Name,
-                            HoursWorked = c.HoursWorked,
-                            HourlyRate = c.HourlyRate,
                             PaymentAmount = c.HoursWorked * c.HourlyRate,
-                            LecturerComment = c.LecturerComment,
-                            ProgramCoordinatorName = c.ProgramCoordinatorUser?.UserName,
-                            ProgramCoordinatorAccepted = c.ProgramCoordinatorAccepted,
-                            ProgramCoordinatorComment = c.ProgramCoordinatorComment,
-                            AcademicManagerName = c.AcademicManagerUser?.UserName,
-                            AcademicManagerAccepted = c.AcademicManagerAccepted,
-                            AcademicManagerComment = c.AcademicManagerComment,
-                            ClaimStatus = c.ClaimStatus,
+                            ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
+                            AcademicManagerDecision = c.AcademicManagerDecision,
+                            ClaimStatus = c.ClaimStatus
                         }),
                 ],
             };
@@ -135,10 +114,10 @@ namespace ContractMonthlyClaimSystem.Controllers
                 PaymentAmount = claim.HoursWorked * claim.HourlyRate,
                 LecturerComment = claim.LecturerComment,
                 ProgramCoordinatorName = claim.ProgramCoordinatorUser?.UserName,
-                ProgramCoordinatorAccepted = claim.ProgramCoordinatorAccepted,
+                ProgramCoordinatorDecision = claim.ProgramCoordinatorDecision,
                 ProgramCoordinatorComment = claim.ProgramCoordinatorComment,
                 AcademicManagerName = claim.AcademicManagerUser?.UserName,
-                AcademicManagerAccepted = claim.AcademicManagerAccepted,
+                AcademicManagerDecision = claim.AcademicManagerDecision,
                 AcademicManagerComment = claim.AcademicManagerComment,
                 ClaimStatus = claim.ClaimStatus,
                 Files = files,
@@ -160,15 +139,18 @@ namespace ContractMonthlyClaimSystem.Controllers
                 return RedirectToAction(nameof(Index)); // Prevent changing someone elses review
 
             claim.AcademicManagerUserId = user.Id;
-            claim.AcademicManagerAccepted = true;
+            claim.AcademicManagerDecision = ClaimDecision.ACCEPTED;
             claim.AcademicManagerComment = comment;
 
-            if (claim.ProgramCoordinatorAccepted == null || claim.AcademicManagerAccepted == null)
+            if (
+                claim.ProgramCoordinatorDecision == ClaimDecision.PENDING
+                || claim.AcademicManagerDecision == ClaimDecision.PENDING
+            )
                 claim.ClaimStatus = ClaimStatus.PENDING_CONFIRM;
             else
                 claim.ClaimStatus =
-                    (claim.ProgramCoordinatorAccepted ?? false)
-                    && (claim.AcademicManagerAccepted ?? false)
+                    claim.ProgramCoordinatorDecision == ClaimDecision.ACCEPTED
+                    && claim.AcademicManagerDecision == ClaimDecision.ACCEPTED
                         ? ClaimStatus.ACCEPTED
                         : ClaimStatus.REJECTED;
 
@@ -191,15 +173,18 @@ namespace ContractMonthlyClaimSystem.Controllers
                 return RedirectToAction(nameof(Index)); // Prevent changing someone elses review
 
             claim.AcademicManagerUserId = user.Id;
-            claim.AcademicManagerAccepted = false;
+            claim.AcademicManagerDecision = ClaimDecision.REJECTED;
             claim.AcademicManagerComment = comment;
 
-            if (claim.ProgramCoordinatorAccepted == null || claim.AcademicManagerAccepted == null)
+            if (
+                claim.ProgramCoordinatorDecision == ClaimDecision.PENDING
+                || claim.AcademicManagerDecision == ClaimDecision.PENDING
+            )
                 claim.ClaimStatus = ClaimStatus.PENDING_CONFIRM;
             else
                 claim.ClaimStatus =
-                    (claim.ProgramCoordinatorAccepted ?? false)
-                    && (claim.AcademicManagerAccepted ?? false)
+                    claim.ProgramCoordinatorDecision == ClaimDecision.ACCEPTED
+                    && claim.AcademicManagerDecision == ClaimDecision.ACCEPTED
                         ? ClaimStatus.ACCEPTED
                         : ClaimStatus.REJECTED;
 

@@ -95,11 +95,11 @@ namespace ContractMonthlyClaimSystem.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool?>("AcademicManagerAccepted")
-                        .HasColumnType("bit");
-
                     b.Property<string>("AcademicManagerComment")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AcademicManagerDecision")
+                        .HasColumnType("int");
 
                     b.Property<string>("AcademicManagerUserId")
                         .HasColumnType("nvarchar(450)");
@@ -123,11 +123,11 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.Property<int>("ModuleId")
                         .HasColumnType("int");
 
-                    b.Property<bool?>("ProgramCoordinatorAccepted")
-                        .HasColumnType("bit");
-
                     b.Property<string>("ProgramCoordinatorComment")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProgramCoordinatorDecision")
+                        .HasColumnType("int");
 
                     b.Property<string>("ProgramCoordinatorUserId")
                         .HasColumnType("nvarchar(450)");

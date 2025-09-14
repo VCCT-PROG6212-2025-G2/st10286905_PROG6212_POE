@@ -10,10 +10,10 @@
         public decimal PaymentAmount { get; set; }
         public string? LecturerComment { get; set; }
         public string? ProgramCoordinatorName { get; set; }
-        public bool? ProgramCoordinatorAccepted { get; set; }
+        public ClaimDecision ProgramCoordinatorDecision { get; set; }
         public string? ProgramCoordinatorComment { get; set; }
         public string? AcademicManagerName { get; set; }
-        public bool? AcademicManagerAccepted { get; set; }
+        public ClaimDecision AcademicManagerDecision { get; set; }
         public string? AcademicManagerComment { get; set; }
         public ClaimStatus ClaimStatus { get; set; }
 

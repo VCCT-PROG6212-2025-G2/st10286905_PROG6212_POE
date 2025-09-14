@@ -4,81 +4,133 @@
     ViewData["Title"] = "Claim Details";
 }
 
-<h2>Claim Details</h2>
+<h2 class="mb-4">Claim Details</h2>
 
-<dl class="row">
-    <dt class="col-sm-3">Lecturer</dt>
-    <dd class="col-sm-9">@Model.LecturerName</dd>
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <table class="table table-sm table-striped">
+            <tbody>
+                <tr>
+                    <th scope="row" class="w-25">Lecturer</th>
+                    <td>@Model.LecturerName</td>
+                </tr>
+                <tr>
+                    <th scope="row">Module</th>
+                    <td>@Model.ModuleName</td>
+                </tr>
+                <tr>
+                    <th scope="row">Hours Worked</th>
+                    <td>@Model.HoursWorked</td>
+                </tr>
+                <tr>
+                    <th scope="row">Hourly Rate</th>
+                    <td>@Model.HourlyRate</td>
+                </tr>
+                <tr>
+                    <th scope="row">Payment Amount</th>
+                    <td>@Model.PaymentAmount.ToString("C")</td>
+                </tr>
+                <tr>
+                    <th scope="row">Lecturer Comment</th>
+                    <td>@Model.LecturerComment</td>
+                </tr>
+                <tr>
+                    <th scope="row">Program Coordinator</th>
+                    <td>@Model.ProgramCoordinatorName</td>
+                </tr>
+                <tr>
+                    <th scope="row">Program Coordinator Decision</th>
+                    <td><span class="badge bg-info">@Model.ProgramCoordinatorDecision</span></td>
+                </tr>
+                <tr>
+                    <th scope="row">Program Coordinator Comment</th>
+                    <td>@Model.ProgramCoordinatorComment</td>
+                </tr>
+                <tr>
+                    <th scope="row">Academic Manager</th>
+                    <td>@Model.AcademicManagerName</td>
+                </tr>
+                <tr>
+                    <th scope="row">Academic Manager Decision</th>
+                    <td><span class="badge bg-info">@Model.AcademicManagerDecision</span></td>
+                </tr>
+                <tr>
+                    <th scope="row">Academic Manager Comment</th>
+                    <td>@Model.AcademicManagerComment</td>
+                </tr>
+                <tr>
+                    <th scope="row">Status</th>
+                    <td><span class="badge bg-info">@Model.ClaimStatus</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <dt class="col-sm-3">Module</dt>
-    <dd class="col-sm-9">@Model.ModuleName</dd>
-
-    <dt class="col-sm-3">Hours Worked</dt>
-    <dd class="col-sm-9">@Model.HoursWorked</dd>
-
-    <dt class="col-sm-3">Hourly Rate</dt>
-    <dd class="col-sm-9">@Model.HourlyRate</dd>
-
-    <dt class="col-sm-3">Payment Amount</dt>
-    <dd class="col-sm-9">@Model.PaymentAmount</dd>
-
-    <dt class="col-sm-3">Lecturer Comment</dt>
-    <dd class="col-sm-9">@Model.LecturerComment</dd>
-
-    <dt class="col-sm-3">Program Coordinator</dt>
-    <dd class="col-sm-9">@Model.ProgramCoordinatorName</dd>
-
-    <dt class="col-sm-3">Coordinator Decision</dt>
-    <dd class="col-sm-9">@Model.ProgramCoordinatorAccepted</dd>
-
-    <dt class="col-sm-3">Coordinator Comment</dt>
-    <dd class="col-sm-9">@Model.ProgramCoordinatorComment</dd>
-
-    <dt class="col-sm-3">Academic Manager</dt>
-    <dd class="col-sm-9">@Model.AcademicManagerName</dd>
-
-    <dt class="col-sm-3">Manager Decision</dt>
-    <dd class="col-sm-9">@Model.AcademicManagerAccepted</dd>
-
-    <dt class="col-sm-3">Manager Comment</dt>
-    <dd class="col-sm-9">@Model.AcademicManagerComment</dd>
-
-    <dt class="col-sm-3">Status</dt>
-    <dd class="col-sm-9">@Model.ClaimStatus</dd>
-</dl>
-
-<h4>Files</h4>
+<h4 class="mb-3">Uploaded Files</h4>
 @if (Model.Files.Any())
 {
-    <ul>
-        @foreach (var file in Model.Files)
-        {
-            <li>
-                <a asp-action="DownloadFile" asp-route-id="@file.Id">@file.FileName</a>
-            </li>
-        }
-    </ul>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>File Name</th>
+                        <th>Size (KB)</th>
+                        <th>Uploaded On</th>
+                        <th>Download</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var file in Model.Files)
+                    {
+                        <tr>
+                            <td>@file.FileName</td>
+                            <td>@(file.FileSize / 1024)</td>
+                            <td>@file.UploadedOn.ToString("g")</td>
+                            <td>
+                                <a asp-action="DownloadFile" asp-route-id="@file.Id" class="btn btn-sm btn-outline-primary">
+                                    Download
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 }
 else
 {
-    <p>No files uploaded.</p>
+    <p class="text-muted">No files uploaded for this claim.</p>
 }
 
-@if (Model.ClaimStatus <= ClaimStatus.PENDING_CONFIRM && Model.AcademicManagerName == null)
+@if (Model.ClaimStatus <= ClaimStatus.PENDING_CONFIRM && Model.AcademicManagerDecision == ClaimDecision.PENDING)
 {
-    <form method="post">
-        <input type="hidden" name="id" value="@Model.Id" />
-
-        <div class="form-group">
-            <label for="comment">Comment</label>
-            <textarea name="comment" class="form-control"></textarea>
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0">Review</h4>
         </div>
+        <div class="card-body">
+            <form method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
 
-        <button type="submit" formaction="@Url.Action("AcceptClaim")" class="btn btn-success">
-            Accept
-        </button>
-        <button type="submit" formaction="@Url.Action("RejectClaim")" class="btn btn-danger">
-            Reject
-        </button>
-    </form>
+                <div class="mb-3">
+                    <label for="comment" class="form-label">Comment</label>
+                    <textarea name="comment" class="form-control" rows="4"></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" formaction="@Url.Action("AcceptClaim")" class="btn btn-success">
+                        Accept
+                    </button>
+                    <button type="submit" formaction="@Url.Action("RejectClaim")" class="btn btn-danger">
+                        Reject
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 }
+
+<a asp-action="Index" class="btn btn-secondary mt-4">Back to Claims</a>

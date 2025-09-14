@@ -1,47 +1,92 @@
 ﻿@model LecturerClaimDetailsViewModel
 
-<h2>Claim Details</h2>
+<h2 class="mb-4">Claim Details</h2>
 
-<div class="card p-3 mb-3">
-    <h4>Module: @Model.ModuleName</h4>
-    <p><strong>Hours Worked:</strong> @Model.HoursWorked</p>
-    <p><strong>Hourly Rate:</strong> @Model.HourlyRate.ToString("C")</p>
-    <p><strong>Comment:</strong> @Model.LecturerComment</p>
-    <p><strong>Status:</strong> @Model.ClaimStatus</p>
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <table class="table table-sm table-striped">
+            <tbody>
+                <tr>
+                    <th scope="row" class="w-25">Module</th>
+                    <td>@Model.ModuleName</td>
+                </tr>
+                <tr>
+                    <th scope="row">Hours Worked</th>
+                    <td>@Model.HoursWorked</td>
+                </tr>
+                <tr>
+                    <th scope="row">Hourly Rate</th>
+                    <td>@Model.HourlyRate</td>
+                </tr>
+                <tr>
+                    <th scope="row">Payment Amount</th>
+                    <td>@Model.PaymentAmount.ToString("C")</td>
+                </tr>
+                <tr>
+                    <th scope="row">Lecturer Comment</th>
+                    <td>@Model.LecturerComment</td>
+                </tr>
+                <tr>
+                    <th scope="row">Program Coordinator Decision</th>
+                    <td><span class="badge bg-info">@Model.ProgramCoordinatorDecision</span></td>
+                </tr>
+                <tr>
+                    <th scope="row">Program Coordinator Comment</th>
+                    <td>@Model.ProgramCoordinatorComment</td>
+                </tr>
+                <tr>
+                    <th scope="row">Academic Manager Decision</th>
+                    <td><span class="badge bg-info">@Model.AcademicManagerDecision</span></td>
+                </tr>
+                <tr>
+                    <th scope="row">Academic Manager Comment</th>
+                    <td>@Model.AcademicManagerComment</td>
+                </tr>
+                <tr>
+                    <th scope="row">Status</th>
+                    <td><span class="badge bg-info">@Model.ClaimStatus</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
+<h4 class="mb-3">Uploaded Files</h4>
 @if (Model.Files.Any())
 {
-    <h4>Uploaded Files</h4>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>File Name</th>
-                <th>Size (KB)</th>
-                <th>Uploaded On</th>
-                <th>Download</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var file in Model.Files)
-            {
-                <tr>
-                    <td>@file.FileName</td>
-                    <td>@(file.FileSize / 1024)</td>
-                    <td>@file.UploadedOn.ToString("g")</td>
-                    <td>
-                        <a asp-action="DownloadFile" asp-route-id="@file.Id" class="btn btn-sm btn-primary">
-                            Download
-                        </a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>File Name</th>
+                        <th>Size (KB)</th>
+                        <th>Uploaded On</th>
+                        <th>Download</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var file in Model.Files)
+                    {
+                        <tr>
+                            <td>@file.FileName</td>
+                            <td>@(file.FileSize / 1024)</td>
+                            <td>@file.UploadedOn.ToString("g")</td>
+                            <td>
+                                <a asp-action="DownloadFile" asp-route-id="@file.Id" class="btn btn-sm btn-outline-primary">
+                                    Download
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 }
 else
 {
-    <p>No files uploaded for this claim.</p>
+    <p class="text-muted">No files uploaded for this claim.</p>
 }
 
-<a asp-action="Index" class="btn btn-secondary">Back to Claims</a>
+<a asp-action="Index" class="btn btn-secondary mt-4">Back to Claims</a>

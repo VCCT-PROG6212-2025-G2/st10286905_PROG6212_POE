@@ -40,10 +40,10 @@ namespace ContractMonthlyClaimSystem.Controllers
                         {
                             Id = c.Id,
                             ModuleName = c.Module.Name,
-                            HoursWorked = c.HoursWorked,
-                            HourlyRate = c.HourlyRate,
-                            LecturerComment = c.LecturerComment,
-                            ClaimStatus = c.ClaimStatus,
+                            PaymentAmount = c.HoursWorked * c.HourlyRate,
+                            ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
+                            AcademicManagerDecision = c.AcademicManagerDecision,
+                            ClaimStatus = c.ClaimStatus
                         }),
                 ],
 
@@ -55,9 +55,9 @@ namespace ContractMonthlyClaimSystem.Controllers
                         {
                             Id = c.Id,
                             ModuleName = c.Module.Name,
-                            HoursWorked = c.HoursWorked,
-                            HourlyRate = c.HourlyRate,
-                            LecturerComment = c.LecturerComment,
+                            PaymentAmount = c.HoursWorked * c.HourlyRate,
+                            ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
+                            AcademicManagerDecision = c.AcademicManagerDecision,
                             ClaimStatus = c.ClaimStatus,
                         }),
                 ],
@@ -172,7 +172,12 @@ namespace ContractMonthlyClaimSystem.Controllers
                 ModuleName = claim.Module.Name,
                 HoursWorked = claim.HoursWorked,
                 HourlyRate = claim.HourlyRate,
+                PaymentAmount = claim.HoursWorked * claim.HourlyRate,
                 LecturerComment = claim.LecturerComment,
+                ProgramCoordinatorDecision = claim.ProgramCoordinatorDecision,
+                ProgramCoordinatorComment = claim.ProgramCoordinatorComment,
+                AcademicManagerDecision = claim.AcademicManagerDecision,
+                AcademicManagerComment = claim.AcademicManagerComment,
                 ClaimStatus = claim.ClaimStatus,
                 Files = files,
             };
