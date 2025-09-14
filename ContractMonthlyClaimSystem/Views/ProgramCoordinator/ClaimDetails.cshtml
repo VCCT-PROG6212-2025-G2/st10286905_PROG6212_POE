@@ -24,11 +24,11 @@
                 </tr>
                 <tr>
                     <th scope="row">Hourly Rate</th>
-                    <td>@Model.HourlyRate</td>
+                    <td>@Model.HourlyRate.ToString("R0.00")</td>
                 </tr>
                 <tr>
                     <th scope="row">Payment Amount</th>
-                    <td>@Model.PaymentAmount.ToString("C")</td>
+                    <td>@Model.PaymentAmount.ToString("R0.00")</td>
                 </tr>
                 <tr>
                     <th scope="row">Lecturer Comment</th>
