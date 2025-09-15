@@ -40,7 +40,7 @@
                 </tr>
                 <tr>
                     <th scope="row">Program Coordinator Decision</th>
-                    <td><span class="badge bg-info">@Model.ProgramCoordinatorDecision</span></td>
+                    <td><span class="badge @Model.ProgramCoordinatorDecision.ToBgClass()">@Model.ProgramCoordinatorDecision</span></td>
                 </tr>
                 <tr>
                     <th scope="row">Program Coordinator Comment</th>
@@ -52,7 +52,7 @@
                 </tr>
                 <tr>
                     <th scope="row">Academic Manager Decision</th>
-                    <td><span class="badge bg-info">@Model.AcademicManagerDecision</span></td>
+                    <td><span class="badge @Model.AcademicManagerDecision.ToBgClass()">@Model.AcademicManagerDecision</span></td>
                 </tr>
                 <tr>
                     <th scope="row">Academic Manager Comment</th>
@@ -60,7 +60,7 @@
                 </tr>
                 <tr>
                     <th scope="row">Status</th>
-                    <td><span class="badge bg-info">@Model.ClaimStatus</span></td>
+                    <td><span class="badge @Model.ClaimStatus.ToBgClass()">@Model.ClaimStatus</span></td>
                 </tr>
             </tbody>
         </table>

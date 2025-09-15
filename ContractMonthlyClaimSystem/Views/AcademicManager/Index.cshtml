@@ -26,9 +26,9 @@
                     <td>@claim.LecturerName</td>
                     <td>@claim.ModuleName</td>
                     <td>@claim.PaymentAmount.ToString("R0.00")</td>
-                    <td>@claim.ProgramCoordinatorDecision</td>
-                    <td>@claim.AcademicManagerDecision</td>
-                    <td>@claim.ClaimStatus</td>
+                    <td><span class="badge @claim.ProgramCoordinatorDecision.ToBgClass()">@claim.ProgramCoordinatorDecision</span></td>
+                    <td><span class="badge @claim.AcademicManagerDecision.ToBgClass()">@claim.AcademicManagerDecision</span></td>
+                    <td><span class="badge @claim.ClaimStatus.ToBgClass()">@claim.ClaimStatus</span></td>
                     <td>
                         <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-primary">Details</a>
                     </td>
@@ -64,9 +64,9 @@ else
                     <td>@claim.LecturerName</td>
                     <td>@claim.ModuleName</td>
                     <td>@claim.PaymentAmount.ToString("R0.00")</td>
-                    <td>@claim.ProgramCoordinatorDecision</td>
-                    <td>@claim.AcademicManagerDecision</td>
-                    <td>@claim.ClaimStatus</td>
+                    <td><span class="badge @claim.ProgramCoordinatorDecision.ToBgClass()">@claim.ProgramCoordinatorDecision</span></td>
+                    <td><span class="badge @claim.AcademicManagerDecision.ToBgClass()">@claim.AcademicManagerDecision</span></td>
+                    <td><span class="badge @claim.ClaimStatus.ToBgClass()">@claim.ClaimStatus</span></td>
                     <td>
                         <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-primary">Details</a>
                     </td>
@@ -102,9 +102,9 @@ else
                     <td>@claim.LecturerName</td>
                     <td>@claim.ModuleName</td>
                     <td>@claim.PaymentAmount.ToString("R0.00")</td>
-                    <td>@claim.ProgramCoordinatorDecision</td>
-                    <td>@claim.AcademicManagerDecision</td>
-                    <td>@claim.ClaimStatus</td>
+                    <td><span class="badge @claim.ProgramCoordinatorDecision.ToBgClass()">@claim.ProgramCoordinatorDecision</span></td>
+                    <td><span class="badge @claim.AcademicManagerDecision.ToBgClass()">@claim.AcademicManagerDecision</span></td>
+                    <td><span class="badge @claim.ClaimStatus.ToBgClass()">@claim.ClaimStatus</span></td>
                     <td>
                         <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-secondary">View</a>
                     </td>
