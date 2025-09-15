@@ -79,7 +79,8 @@ namespace ContractMonthlyClaimSystem.Data
             [
                 new Module { Name = "Programming 2B", Code = "PROG6212" },
                 new Module { Name = "Cloud Development B", Code = "CLDV6212" },
-                new Module { Name = "Information Systems 2C", Code = "INSY7213" }
+                new Module { Name = "Information Systems 2C", Code = "INSY7213" },
+                new Module { Name = "Cyber Security 1337E", Code = "CSEC1337" }
             ];
 
             var lecturerUser = await _userManager.FindByNameAsync("lecturer@cmcs.app");
