@@ -1,41 +1,75 @@
 ﻿@model CreateClaimViewModel
+@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68c805bd-a108-800b-80cb-477b82f23743 *@
 
-<h2>Create New Claim</h2>
+<div class="container mt-4">
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Create New Claim</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="CreateClaim" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label asp-for="ModuleId" class="form-label"></label>
+                    <select asp-for="ModuleId" asp-items="@(new SelectList(Model.Modules, "Id", "Name"))"
+                            class="form-select"></select>
+                    <span asp-validation-for="ModuleId" class="text-danger small"></span>
+                </div>
 
-<form asp-action="CreateClaim" method="post" enctype="multipart/form-data">
-    <div class="form-group">
-        <label asp-for="ModuleId"></label>
-        <select asp-for="ModuleId" asp-items="@(new SelectList(Model.Modules, "Id", "Name"))" class="form-control"></select>
-        <span asp-validation-for="ModuleId" class="text-danger"></span>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="HoursWorked" class="form-label"></label>
+                        <input asp-for="HoursWorked" class="form-control" id="hoursWorked" />
+                        <span asp-validation-for="HoursWorked" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="HourlyRate" class="form-label"></label>
+                        <input asp-for="HourlyRate" class="form-control" id="hourlyRate" />
+                        <span asp-validation-for="HourlyRate" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Estimated Payment</label>
+                    <div class="alert alert-info p-2 mb-0">
+                        <span id="paymentAmount">R0.00</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="LecturerComment" class="form-label"></label>
+                    <textarea asp-for="LecturerComment" class="form-control" rows="3" placeholder="Enter any additional details..."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Files" class="form-label">Upload Supporting Files</label>
+                    <input asp-for="Files" type="file" class="form-control" multiple
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md" />
+                    <small class="form-text text-muted">You may upload multiple files (PDF, Word, Excel, etc.).</small>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <a asp-action="Index" class="btn btn-outline-secondary me-2">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Submit Claim</button>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <div class="form-group">
-        <label asp-for="HoursWorked"></label>
-        <input asp-for="HoursWorked" class="form-control" />
-        <span asp-validation-for="HoursWorked" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="HourlyRate"></label>
-        <input asp-for="HourlyRate" class="form-control" />
-        <span asp-validation-for="HourlyRate" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="LecturerComment"></label>
-        <textarea asp-for="LecturerComment" class="form-control"></textarea>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="Files">Upload Files</label>
-        <input asp-for="Files" type="file" class="form-control" multiple />
-    </div>
-
-    <button type="submit" class="btn btn-primary">Submit Claim</button>
-</form>
+</div>
 
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script>
+        function calculatePayment() {
+            const hours = parseFloat(document.getElementById("hoursWorked").value) || 0;
+            const rate = parseFloat(document.getElementById("hourlyRate").value) || 0;
+            const total = hours * rate;
+            document.getElementById("paymentAmount").textContent = "R" + total.toFixed(2);
+        }
+
+        document.getElementById("hoursWorked").addEventListener("input", calculatePayment);
+        document.getElementById("hourlyRate").addEventListener("input", calculatePayment);
+    </script>
 }
