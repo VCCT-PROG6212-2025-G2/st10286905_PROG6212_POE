@@ -1,60 +1,79 @@
 ﻿@model LecturerModuleManagerIndexViewModel
+@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca99b5-dc0c-800b-b554-c315e49df063 *@
 
-<h2>Lecturers</h2>
+<!-- Lecturers -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+        <i class="bi bi-people"></i> Lecturers
+    </div>
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Modules</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var lecturer in Model.Lecturers)
+                {
+                    <tr>
+                        <td>@lecturer.Name</td>
+                        <td>@string.Join(", ", lecturer.Modules.Select(m => m.Code))</td>
+                        <td>
+                            <a asp-action="ManageLecturerModules" asp-route-id="@lecturer.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil-square"></i> Manage Modules
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Modules</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var lecturer in Model.Lecturers)
-        {
-            <tr>
-                <td>@lecturer.Name</td>
-                <td>@string.Join(", ", lecturer.Modules.Select(m => m.Code))</td>
-                <td>
-                    <a asp-action="ManageLecturerModules" asp-route-id="@lecturer.Id" class="btn btn-primary btn-sm">Manage Modules</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<!-- All Modules -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-secondary text-white fw-bold">
+        <i class="bi bi-journal-bookmark"></i> All Modules
+    </div>
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Module Name</th>
+                    <th>Module Code</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var module in Model.Modules)
+                {
+                    <tr>
+                        <td>@module.Name</td>
+                        <td>@module.Code</td>
+                        <td>
+                            <form asp-action="DeleteModule" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@module.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
 
-<hr />
-
-<h2>All Modules</h2>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>Module Name</th>
-            <th>Module Code</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var module in Model.Modules)
-        {
-            <tr>
-                <td>@module.Name</td>
-                <td>@module.Code</td>
-                <td>
-                    <form asp-action="DeleteModule" method="post" style="display:inline">
-                        <input type="hidden" name="id" value="@module.Id" />
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-<h3>Add New Module</h3>
-<div class="card mt-3">
+<!-- Add New Module -->
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white fw-bold">
+        <i class="bi bi-plus-circle"></i> Add New Module
+    </div>
     <div class="card-body">
         <form asp-action="CreateModule" method="post">
             <div class="row mb-3">
@@ -70,7 +89,7 @@
 
             <div class="text-end">
                 <button type="submit" class="btn btn-success">
-                    <i class="bi bi-plus-circle"></i> Add Module
+                    <i class="bi bi-check-circle"></i> Add Module
                 </button>
             </div>
         </form>

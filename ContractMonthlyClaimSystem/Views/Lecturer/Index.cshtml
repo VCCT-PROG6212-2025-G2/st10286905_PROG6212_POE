@@ -1,87 +1,103 @@
 ﻿@model LecturerClaimsViewModel
+@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca960e-897c-800b-a7b1-bbd22862ff00 *@
 
 @{
     ViewData["Title"] = "Lecturer - Claims";
 }
 
-<h2>My Claims</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">My Claims</h1>
+    <a asp-action="CreateClaim" class="btn btn-lg btn-primary shadow">
+        <i class="bi bi-plus-circle me-1"></i> Create New Claim
+    </a>
+</div>
 
-<p>
-    <a asp-action="CreateClaim" class="btn btn-success">+ Create New Claim</a>
-</p>
+<!-- Pending Claims -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-warning text-white fw-bold">
+        <i class="bi bi-hourglass-split"></i> Pending Claims
+    </div>
+    <div class="card-body">
+        @if (Model.PendingClaims.Any())
+        {
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Module</th>
+                        <th>Payment Amount</th>
+                        <th>Program Coordinator</th>
+                        <th>Academic Manager</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var claim in Model.PendingClaims)
+                    {
+                        <tr>
+                            <td>@claim.ModuleName</td>
+                            <td class="fw-semibold">@claim.PaymentAmount.ToString("R0.00")</td>
+                            <td><span class="badge @claim.ProgramCoordinatorDecision.ToBgClass()">@claim.ProgramCoordinatorDecision</span></td>
+                            <td><span class="badge @claim.AcademicManagerDecision.ToBgClass()">@claim.AcademicManagerDecision</span></td>
+                            <td><span class="badge @claim.ClaimStatus.ToBgClass()">@claim.ClaimStatus</span></td>
+                            <td>
+                                <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-muted"><em>No pending claims.</em></p>
+        }
+    </div>
+</div>
 
-<h2>Pending Claims</h2>
-@if (Model.PendingClaims.Any())
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Module</th>
-                <th>Payment Amount</th>
-                <th>Program Coordinator Decision</th>
-                <th>Academic Manager Decision</th>
-                <th>Status</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var claim in Model.PendingClaims)
-            {
-                <tr>
-                    <td>@claim.ModuleName</td>
-                    <td>@claim.PaymentAmount.ToString("R0.00")</td>
-                    <td><span class="badge @claim.ProgramCoordinatorDecision.ToBgClass()">@claim.ProgramCoordinatorDecision</span></td>
-                    <td><span class="badge @claim.AcademicManagerDecision.ToBgClass()">@claim.AcademicManagerDecision</span></td>
-                    <td><span class="badge @claim.ClaimStatus.ToBgClass()">@claim.ClaimStatus</span></td>
-                    <td>
-                        <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-primary">
-                            View Details
-                        </a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <p><em>No pending claims.</em></p>
-}
-
-<h2>Completed Claims</h2>
-@if (Model.CompletedClaims.Any())
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Module</th>
-                <th>Payment Amount</th>
-                <th>Program Coordinator Decision</th>
-                <th>Academic Manager Decision</th>
-                <th>Status</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var claim in Model.CompletedClaims)
-            {
-                <tr>
-                    <td>@claim.ModuleName</td>
-                    <td>@claim.PaymentAmount.ToString("R0.00")</td>
-                    <td><span class="badge @claim.ProgramCoordinatorDecision.ToBgClass()">@claim.ProgramCoordinatorDecision</span></td>
-                    <td><span class="badge @claim.AcademicManagerDecision.ToBgClass()">@claim.AcademicManagerDecision</span></td>
-                    <td><span class="badge @claim.ClaimStatus.ToBgClass()">@claim.ClaimStatus</span></td>
-                    <td>
-                        <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-primary">
-                            View Details
-                        </a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <p><em>No completed claims.</em></p>
-}
+<!-- Completed Claims -->
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white fw-bold">
+        <i class="bi bi-check-circle"></i> Completed Claims
+    </div>
+    <div class="card-body">
+        @if (Model.CompletedClaims.Any())
+        {
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Module</th>
+                        <th>Payment Amount</th>
+                        <th>Program Coordinator</th>
+                        <th>Academic Manager</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var claim in Model.CompletedClaims)
+                    {
+                        <tr>
+                            <td>@claim.ModuleName</td>
+                            <td class="fw-semibold">@claim.PaymentAmount.ToString("R0.00")</td>
+                            <td><span class="badge @claim.ProgramCoordinatorDecision.ToBgClass()">@claim.ProgramCoordinatorDecision</span></td>
+                            <td><span class="badge @claim.AcademicManagerDecision.ToBgClass()">@claim.AcademicManagerDecision</span></td>
+                            <td><span class="badge @claim.ClaimStatus.ToBgClass()">@claim.ClaimStatus</span></td>
+                            <td>
+                                <a asp-action="ClaimDetails" asp-route-id="@claim.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-muted"><em>No completed claims.</em></p>
+        }
+    </div>
+</div>

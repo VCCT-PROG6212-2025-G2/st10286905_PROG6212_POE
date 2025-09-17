@@ -1,29 +1,67 @@
 ﻿@model ManageUserRolesViewModel
+@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca99b5-dc0c-800b-b554-c315e49df063 *@
 
-<h2>Manage Roles for @Model.UserName</h2>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+        <i class="bi bi-person-gear"></i> Manage Roles for @Model.UserName
+    </div>
+    <div class="card-body">
+        <form asp-action="Manage" method="post" id="rolesForm">
+            <input type="hidden" asp-for="UserId" />
 
-<form asp-action="Manage" method="post">
-    <input type="hidden" asp-for="UserId" />
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Role</th>
-                <th>Assigned</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (int i = 0; i < Model.Roles.Count; i++)
-            {
-                <tr>
-                    <td>@Model.Roles[i].RoleName</td>
-                    <td>
-                        <input type="checkbox" asp-for="@Model.Roles[i].Selected" />
-                        <input type="hidden" asp-for="@Model.Roles[i].RoleName" />
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a asp-action="Index" class="btn btn-secondary">Back</a>
-</form>
+            <table class="table table-hover align-middle table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th class="fw-semibold">Role</th>
+                        <th class="fw-semibold text-center" style="width: 120px;">Assigned</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Roles.Count; i++)
+                    {
+                        <tr>
+                            <td>@Model.Roles[i].RoleName</td>
+                            <td class="text-center">
+                                <input type="checkbox" asp-for="@Model.Roles[i].Selected"
+                                       class="form-check-input role-checkbox" />
+                                <input type="hidden" asp-for="@Model.Roles[i].RoleName" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="submit" class="btn btn-success" id="saveBtn" disabled>
+                    <i class="bi bi-check-circle"></i> Save Changes
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const checkboxes = document.querySelectorAll(".role-checkbox");
+            const saveBtn = document.getElementById("saveBtn");
+
+            let formChanged = false;
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener("change", () => {
+                    formChanged = true;
+                    saveBtn.removeAttribute("disabled");
+                });
+            });
+
+            // Optional: disable save button again after submit to prevent double-clicks
+            document.getElementById("rolesForm").addEventListener("submit", function () {
+                saveBtn.setAttribute("disabled", "disabled");
+            });
+        });
+    </script>
+}

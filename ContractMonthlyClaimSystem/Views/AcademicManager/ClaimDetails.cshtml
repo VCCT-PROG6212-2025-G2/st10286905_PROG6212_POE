@@ -1,14 +1,16 @@
 ﻿@model ReviewerClaimDetailsViewModel
-
+@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca99b5-dc0c-800b-b554-c315e49df063 *@
 @{
     ViewData["Title"] = "Claim Details";
 }
 
-<h2 class="mb-4">Claim Details</h2>
-
-<div class="card mb-4 shadow-sm">
+<!-- Claim Details -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+        <i class="bi bi-file-earmark-text"></i> Claim Details
+    </div>
     <div class="card-body">
-        <table class="table table-sm table-striped">
+        <table class="table table-sm table-striped align-middle mb-0">
             <tbody>
                 <tr>
                     <th scope="row" class="w-25">Lecturer</th>
@@ -28,11 +30,20 @@
                 </tr>
                 <tr>
                     <th scope="row">Payment Amount</th>
-                    <td>@Model.PaymentAmount.ToString("R0.00")</td>
+                    <td class="fw-semibold">@Model.PaymentAmount.ToString("R0.00")</td>
                 </tr>
                 <tr>
                     <th scope="row">Lecturer Comment</th>
-                    <td>@Model.LecturerComment</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(Model.LecturerComment))
+                        {
+                            @Model.LecturerComment
+                        }
+                        else
+                        {
+                            <em class="text-muted">No comment</em>
+                        }
+                    </td>
                 </tr>
                 <tr>
                     <th scope="row">Program Coordinator</th>
@@ -44,7 +55,16 @@
                 </tr>
                 <tr>
                     <th scope="row">Program Coordinator Comment</th>
-                    <td>@Model.ProgramCoordinatorComment</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(Model.ProgramCoordinatorComment))
+                        {
+                            @Model.ProgramCoordinatorComment
+                        }
+                        else
+                        {
+                            <em class="text-muted">No comment</em>
+                        }
+                    </td>
                 </tr>
                 <tr>
                     <th scope="row">Academic Manager</th>
@@ -56,7 +76,16 @@
                 </tr>
                 <tr>
                     <th scope="row">Academic Manager Comment</th>
-                    <td>@Model.AcademicManagerComment</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(Model.AcademicManagerComment))
+                        {
+                            @Model.AcademicManagerComment
+                        }
+                        else
+                        {
+                            <em class="text-muted">No comment</em>
+                        }
+                    </td>
                 </tr>
                 <tr>
                     <th scope="row">Status</th>
@@ -67,18 +96,21 @@
     </div>
 </div>
 
-<h4 class="mb-3">Uploaded Files</h4>
-@if (Model.Files.Any())
-{
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
+<!-- Uploaded Files -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-secondary text-white fw-bold">
+        <i class="bi bi-paperclip"></i> Uploaded Files
+    </div>
+    <div class="card-body">
+        @if (Model.Files.Any())
+        {
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
                         <th>File Name</th>
                         <th>Size (KB)</th>
                         <th>Uploaded On</th>
-                        <th>Download</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -90,26 +122,27 @@
                             <td>@file.UploadedOn.ToString("g")</td>
                             <td>
                                 <a asp-action="DownloadFile" asp-route-id="@file.Id" class="btn btn-sm btn-outline-primary">
-                                    Download
+                                    <i class="bi bi-download"></i> Download
                                 </a>
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
-        </div>
+        }
+        else
+        {
+            <p class="text-muted mb-0"><em>No files uploaded for this claim.</em></p>
+        }
     </div>
-}
-else
-{
-    <p class="text-muted">No files uploaded for this claim.</p>
-}
+</div>
 
+<!-- Review Section -->
 @if (Model.ClaimStatus <= ClaimStatus.PENDING_CONFIRM && Model.AcademicManagerDecision == ClaimDecision.PENDING)
 {
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h4 class="mb-0">Review</h4>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white fw-bold">
+            <i class="bi bi-check2-square"></i> Review Claim
         </div>
         <div class="card-body">
             <form method="post">
@@ -117,15 +150,15 @@ else
 
                 <div class="mb-3">
                     <label for="comment" class="form-label">Comment</label>
-                    <textarea name="comment" class="form-control" rows="4"></textarea>
+                    <textarea name="comment" class="form-control" rows="4" placeholder="Enter your review comment here..."></textarea>
                 </div>
 
                 <div class="d-flex gap-2">
                     <button type="submit" formaction="@Url.Action("AcceptClaim")" class="btn btn-success">
-                        Accept
+                        <i class="bi bi-check-circle"></i> Accept
                     </button>
                     <button type="submit" formaction="@Url.Action("RejectClaim")" class="btn btn-danger">
-                        Reject
+                        <i class="bi bi-x-circle"></i> Reject
                     </button>
                 </div>
             </form>
@@ -133,4 +166,9 @@ else
     </div>
 }
 
-<a asp-action="Index" class="btn btn-secondary mt-4">Back to Claims</a>
+<!-- Back Button -->
+<div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Claims
+    </a>
+</div>
