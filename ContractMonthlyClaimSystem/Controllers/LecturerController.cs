@@ -108,6 +108,7 @@ namespace ContractMonthlyClaimSystem.Controllers
             _context.ContractClaims.Add(claim);
             await _context.SaveChangesAsync();
 
+            // AI Disclaimer: I made use of ChatGPT to assist with upload functionality. Link: https://chatgpt.com/share/68cac0b4-34b8-800b-b47c-a65ef55ad8e5
             if (model.Files != null && model.Files.Any())
             {
                 foreach (var file in model.Files)
