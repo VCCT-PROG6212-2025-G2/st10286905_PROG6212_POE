@@ -1,6 +1,7 @@
 ﻿using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.ViewModels;
+using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,24 +11,19 @@ namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Lecturer")]
     public class LecturerController(
-        ApplicationDbContext context,
-        UserManager<AppUser> userManager,
-        IWebHostEnvironment env
+        ILecturerClaimService claimService,
+        UserManager<AppUser> userManager
     ) : Controller
     {
-        private readonly ApplicationDbContext _context = context;
+        private readonly ILecturerClaimService _claimService = claimService;
         private readonly UserManager<AppUser> _userManager = userManager;
-        private readonly IWebHostEnvironment _env = env;
 
         public async Task<IActionResult> Index()
         {
             // Get lecturer user from HttpContext. Ref: https://stackoverflow.com/a/42493106
             var lecturer = await _userManager.GetUserAsync(HttpContext.User);
 
-            var claims = await _context
-                .ContractClaims.Include(c => c.Module)
-                .Where(c => c.LecturerUserId == lecturer.Id)
-                .ToListAsync();
+            var claims = await _claimService.GetClaimsForLecturerAsync(lecturer.Id);
 
             var vm = new LecturerClaimsViewModel
             {
@@ -69,11 +65,7 @@ namespace ContractMonthlyClaimSystem.Controllers
             var lecturer = await _userManager.GetUserAsync(HttpContext.User);
 
             // Get modules taught by lecturer.
-            var modules = await (
-                from lm in _context.LecturerModules
-                where lm.LecturerUserId == lecturer.Id
-                select lm.Module
-            ).ToListAsync();
+            var modules = await _claimService.GetModulesForLecturerAsync(lecturer.Id);
 
             var vm = new CreateClaimViewModel { Modules = modules };
             return View(vm);
@@ -88,63 +80,12 @@ namespace ContractMonthlyClaimSystem.Controllers
             if (!ModelState.IsValid)
             {
                 // Repopulate modules
-                model.Modules = await (
-                    from lm in _context.LecturerModules
-                    where lm.LecturerUserId == lecturer.Id
-                    select lm.Module
-                ).ToListAsync();
+                model.Modules = await _claimService.GetModulesForLecturerAsync(lecturer.Id);
                 return View(model);
             }
 
-            var claim = new ContractClaim
-            {
-                LecturerUserId = lecturer.Id,
-                ModuleId = model.ModuleId,
-                HoursWorked = model.HoursWorked,
-                HourlyRate = model.HourlyRate,
-                LecturerComment = model.LecturerComment,
-            };
-
-            _context.ContractClaims.Add(claim);
-            await _context.SaveChangesAsync();
-
-            // AI Disclaimer: I made use of ChatGPT to assist with upload functionality. Link: https://chatgpt.com/share/68cac0b4-34b8-800b-b47c-a65ef55ad8e5
-            if (model.Files != null && model.Files.Any())
-            {
-                foreach (var file in model.Files)
-                {
-                    if (file.Length > 0)
-                    {
-                        var uploadsDir = Path.Combine(_env.WebRootPath, "uploads");
-                        Directory.CreateDirectory(uploadsDir);
-
-                        // Ensure file name is unique and sanitized/secure
-                        var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-                        var filePath = Path.Combine(uploadsDir, uniqueFileName);
-
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                            await file.CopyToAsync(stream);
-
-                        var uploadedFile = new UploadedFile
-                        {
-                            FileName = file.FileName,
-                            FilePath = $"uploads/{uniqueFileName}",
-                            FileSize = file.Length,
-                            UploadedOn = DateTime.Now,
-                        };
-                        _context.UploadedFiles.Add(uploadedFile);
-                        await _context.SaveChangesAsync();
-
-                        var claimDoc = new ContractClaimDocument
-                        {
-                            ContractClaimId = claim.Id,
-                            UploadedFileId = uploadedFile.Id,
-                        };
-                        _context.ContractClaimsDocuments.Add(claimDoc);
-                    }
-                }
-                await _context.SaveChangesAsync();
-            }
+            var claim = await _claimService.CreateClaimAsync(lecturer.Id, model);
+            await _claimService.AddFilesToClaimAsync(claim, model.Files);
 
             return RedirectToAction(nameof(Index));
         }
@@ -153,18 +94,12 @@ namespace ContractMonthlyClaimSystem.Controllers
         {
             var lecturer = await _userManager.GetUserAsync(HttpContext.User);
 
-            var claim = await _context
-                .ContractClaims.Include(c => c.Module)
-                .FirstOrDefaultAsync(c => c.Id == id && c.LecturerUserId == lecturer.Id);
+            var claim = await _claimService.GetClaimAsync(id, lecturer.Id);
 
             if (claim == null)
                 return NotFound();
 
-            var files = await (
-                from d in _context.ContractClaimsDocuments
-                where d.ContractClaimId == claim.Id
-                select d.UploadedFile
-            ).ToListAsync();
+            var files = await _claimService.GetClaimFilesAsync(claim);
 
             var vm = new LecturerClaimDetailsViewModel
             {
@@ -188,20 +123,11 @@ namespace ContractMonthlyClaimSystem.Controllers
         {
             var lecturer = await _userManager.GetUserAsync(HttpContext.User);
 
-            var file = await (
-                from d in _context.ContractClaimsDocuments
-                where d.ContractClaim.LecturerUserId == lecturer.Id && d.UploadedFileId == id
-                select d.UploadedFile
-            ).FirstOrDefaultAsync();
+            var file = await _claimService.GetFileAsync(id, lecturer.Id); 
             if (file == null)
                 return NotFound();
 
-            var filePath = Path.Combine(_env.WebRootPath, file.FilePath);
-            if (!System.IO.File.Exists(filePath))
-                return NotFound();
-
-            var contentType = "application/octet-stream";
-            return PhysicalFile(filePath, contentType, file.FileName);
+            return PhysicalFile(file.Value.FilePath, file.Value.ContentType, file.Value.FileName);
         }
     }
 }

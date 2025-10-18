@@ -1,6 +1,7 @@
 ﻿using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.ViewModels;
+using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,23 +11,16 @@ namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "ProgramCoordinator")]
     public class ProgramCoordinatorController(
-        ApplicationDbContext context,
-        UserManager<AppUser> userManager,
-        IWebHostEnvironment env
+        IReviewerClaimService reviewerClaimService,
+        UserManager<AppUser> userManager
     ) : Controller
     {
-        private readonly ApplicationDbContext _context = context;
+        private readonly IReviewerClaimService _reviewerClaimService = reviewerClaimService;
         private readonly UserManager<AppUser> _userManager = userManager;
-        private readonly IWebHostEnvironment _env = env;
 
         public async Task<IActionResult> Index()
         {
-            var claims = await _context
-                .ContractClaims.Include(c => c.Module)
-                .Include(c => c.LecturerUser)
-                .Include(c => c.ProgramCoordinatorUser)
-                .Include(c => c.AcademicManagerUser)
-                .ToListAsync();
+            var claims = await _reviewerClaimService.GetClaimsAsync();
 
             var vm = new ReviewerClaimsViewModel
             {
@@ -87,22 +81,12 @@ namespace ContractMonthlyClaimSystem.Controllers
 
         public async Task<IActionResult> ClaimDetails(int id)
         {
-            var claim = await _context
-                .ContractClaims.Include(c => c.Module)
-                .Include(c => c.LecturerUser)
-                .Include(c => c.ProgramCoordinatorUser)
-                .Include(c => c.AcademicManagerUser)
-                .Where(c => c.Id == id)
-                .FirstOrDefaultAsync();
+            var claim = await _reviewerClaimService.GetClaimAsync(id);
 
             if (claim == null)
                 return NotFound();
 
-            var files = await (
-                from d in _context.ContractClaimsDocuments
-                where d.ContractClaimId == claim.Id
-                select d.UploadedFile
-            ).ToListAsync();
+            var files = await _reviewerClaimService.GetClaimFilesAsync(claim);
 
             var vm = new ReviewerClaimDetailsViewModel
             {
@@ -131,30 +115,9 @@ namespace ContractMonthlyClaimSystem.Controllers
         {
             var user = await _userManager.GetUserAsync(HttpContext.User);
 
-            var claim = _context.ContractClaims.Find(id);
-            if (claim == null)
+            var res = await _reviewerClaimService.ReviewClaim(id, user.Id, accept: true, comment);
+            if (res == false)
                 return RedirectToAction(nameof(Index)); // Invalid claim
-
-            if (claim.ProgramCoordinatorUserId != null && claim.ProgramCoordinatorUserId != user.Id)
-                return RedirectToAction(nameof(Index)); // Prevent changing someone elses review
-
-            claim.ProgramCoordinatorUserId = user.Id;
-            claim.ProgramCoordinatorDecision = ClaimDecision.ACCEPTED;
-            claim.ProgramCoordinatorComment = comment;
-
-            if (
-                claim.ProgramCoordinatorDecision == ClaimDecision.PENDING
-                || claim.AcademicManagerDecision == ClaimDecision.PENDING
-            )
-                claim.ClaimStatus = ClaimStatus.PENDING_CONFIRM;
-            else
-                claim.ClaimStatus =
-                    claim.ProgramCoordinatorDecision == ClaimDecision.ACCEPTED
-                    && claim.AcademicManagerDecision == ClaimDecision.ACCEPTED
-                        ? ClaimStatus.ACCEPTED
-                        : ClaimStatus.REJECTED;
-
-            await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
@@ -165,46 +128,20 @@ namespace ContractMonthlyClaimSystem.Controllers
         {
             var user = await _userManager.GetUserAsync(HttpContext.User);
 
-            var claim = _context.ContractClaims.Find(id);
-            if (claim == null)
+            var res = await _reviewerClaimService.ReviewClaim(id, user.Id, accept: false, comment);
+            if (res == false)
                 return RedirectToAction(nameof(Index)); // Invalid claim
-
-            if (claim.ProgramCoordinatorUserId != null && claim.ProgramCoordinatorUserId != user.Id)
-                return RedirectToAction(nameof(Index)); // Prevent changing someone elses review
-
-            claim.ProgramCoordinatorUserId = user.Id;
-            claim.ProgramCoordinatorDecision = ClaimDecision.REJECTED;
-            claim.ProgramCoordinatorComment = comment;
-
-            if (
-                claim.ProgramCoordinatorDecision == ClaimDecision.PENDING
-                || claim.AcademicManagerDecision == ClaimDecision.PENDING
-            )
-                claim.ClaimStatus = ClaimStatus.PENDING_CONFIRM;
-            else
-                claim.ClaimStatus =
-                    claim.ProgramCoordinatorDecision == ClaimDecision.ACCEPTED
-                    && claim.AcademicManagerDecision == ClaimDecision.ACCEPTED
-                        ? ClaimStatus.ACCEPTED
-                        : ClaimStatus.REJECTED;
-
-            await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> DownloadFile(int id)
         {
-            var file = await _context.UploadedFiles.FindAsync(id);
+            var file = await _reviewerClaimService.GetFileAsync(id);
             if (file == null)
                 return NotFound();
 
-            var filePath = Path.Combine(_env.WebRootPath, file.FilePath);
-            if (!System.IO.File.Exists(filePath))
-                return NotFound();
-
-            var contentType = "application/octet-stream";
-            return PhysicalFile(filePath, contentType, file.FileName);
+            return PhysicalFile(file.Value.FilePath, file.Value.ContentType, file.Value.FileName);
         }
     }
 }

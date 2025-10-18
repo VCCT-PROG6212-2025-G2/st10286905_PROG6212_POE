@@ -2,7 +2,8 @@ using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
+using ContractMonthlyClaimSystem.Services;
+
 internal class Program
 {
     private static async Task Main(string[] args)
@@ -25,6 +26,9 @@ internal class Program
 
         // Add database seeder as scoped service
         builder.Services.AddScoped<DatabaseSeeder>();
+
+        // Add our custom services
+        builder.Services.AddApplicationServices();
 
         var app = builder.Build();
 
