@@ -127,7 +127,7 @@ namespace ContractMonthlyClaimSystem.Controllers
             if (file == null)
                 return NotFound();
 
-            return PhysicalFile(file.Value.FilePath, file.Value.ContentType, file.Value.FileName);
+            return File(file.Value.FileStream, file.Value.ContentType, file.Value.FileName);
         }
     }
 }

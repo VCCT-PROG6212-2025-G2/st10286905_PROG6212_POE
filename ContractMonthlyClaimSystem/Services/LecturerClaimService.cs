@@ -6,11 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ContractMonthlyClaimSystem.Services
 {
-    public class LecturerClaimService(ApplicationDbContext context, IWebHostEnvironment env)
-        : ILecturerClaimService
+    public class LecturerClaimService(
+        ApplicationDbContext context,
+        IWebHostEnvironment env,
+        IFileEncryptionService encryptionService
+    ) : ILecturerClaimService
     {
         private readonly ApplicationDbContext _context = context;
         private readonly IWebHostEnvironment _env = env;
+        private readonly IFileEncryptionService _encryptionService = encryptionService;
 
         public async Task<List<ContractClaim>> GetClaimsForLecturerAsync(string lecturerId) =>
             await _context
@@ -73,8 +77,8 @@ namespace ContractMonthlyClaimSystem.Services
                     var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
                     var filePath = Path.Combine(uploadsDir, uniqueFileName);
 
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                        await file.CopyToAsync(stream);
+                    using var inputStream = file.OpenReadStream();
+                    await _encryptionService.EncryptToFileAsync(inputStream, filePath);
 
                     var uploadedFile = new UploadedFile
                     {
@@ -97,7 +101,11 @@ namespace ContractMonthlyClaimSystem.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<(string FileName, string FilePath, string ContentType)?> GetFileAsync(int fileId, string lecturerId)
+        public async Task<(
+            string FileName,
+            MemoryStream FileStream,
+            string ContentType
+        )?> GetFileAsync(int fileId, string lecturerId)
         {
             var file = await (
                 from d in _context.ContractClaimsDocuments
@@ -111,9 +119,13 @@ namespace ContractMonthlyClaimSystem.Services
             if (!System.IO.File.Exists(filePath))
                 return null;
 
+            var output = new MemoryStream();
+            await _encryptionService.DecryptToStreamAsync(filePath, output);
+            output.Position = 0;
+
             var contentType = "application/octet-stream";
 
-            return (file.FileName, filePath, contentType);
+            return (file.FileName, output, contentType);
         }
     }
 }

@@ -9,12 +9,14 @@ namespace ContractMonthlyClaimSystem.Services
     public class ReviewerClaimService(
         ApplicationDbContext context,
         IWebHostEnvironment env,
-        UserManager<AppUser> userManager
+        UserManager<AppUser> userManager,
+        IFileEncryptionService encryptionService
     ) : IReviewerClaimService
     {
         private readonly ApplicationDbContext _context = context;
         private readonly IWebHostEnvironment _env = env;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly IFileEncryptionService _encryptionService = encryptionService;
 
         public async Task<List<ContractClaim>> GetClaimsAsync() =>
             await _context
@@ -40,7 +42,12 @@ namespace ContractMonthlyClaimSystem.Services
                 select d.UploadedFile
             ).ToListAsync();
 
-        public async Task<bool> ReviewClaim(int claimId, string userId, bool accept, string? comment)
+        public async Task<bool> ReviewClaim(
+            int claimId,
+            string userId,
+            bool accept,
+            string? comment
+        )
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
@@ -104,9 +111,11 @@ namespace ContractMonthlyClaimSystem.Services
             return true;
         }
 
-        public async Task<(string FileName, string FilePath, string ContentType)?> GetFileAsync(
-            int fileId
-        )
+        public async Task<(
+            string FileName,
+            MemoryStream FileStream,
+            string ContentType
+        )?> GetFileAsync(int fileId)
         {
             var file = await _context.UploadedFiles.FindAsync(fileId);
             if (file == null)
@@ -116,9 +125,13 @@ namespace ContractMonthlyClaimSystem.Services
             if (!System.IO.File.Exists(filePath))
                 return null;
 
+            var output = new MemoryStream();
+            await _encryptionService.DecryptToStreamAsync(filePath, output);
+            output.Position = 0;
+
             var contentType = "application/octet-stream";
 
-            return (file.FileName, filePath, contentType);
+            return (file.FileName, output, contentType);
         }
     }
 }

@@ -7,7 +7,9 @@ namespace ContractMonthlyClaimSystem.Services
     {
         public static void AddApplicationServices(this IServiceCollection services)
         {
+            services.AddScoped<IFileEncryptionService, FileEncryptionService>();
             services.AddScoped<ILecturerClaimService, LecturerClaimService>();
+            services.AddScoped<IReviewerClaimService, ReviewerClaimService>();
         }
     }
 }
