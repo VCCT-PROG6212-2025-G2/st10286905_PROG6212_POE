@@ -1,11 +1,9 @@
-﻿using ContractMonthlyClaimSystem.Data;
-using ContractMonthlyClaimSystem.Models;
+﻿using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ContractMonthlyClaimSystem.Controllers
 {
