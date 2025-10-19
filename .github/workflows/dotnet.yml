@@ -1,0 +1,53 @@
+name: .NET Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Restore all NuGet dependencies
+      - name: Restore dependencies
+        run: dotnet restore ContractMonthlyClaimSystem.sln
+
+      # Build in Release mode
+      - name: Build
+        run: dotnet build ContractMonthlyClaimSystem.sln --configuration Release --no-restore
+
+      # Run all xUnit tests and collect coverage + TRX logs
+      - name: Run Tests
+        run: dotnet test ContractMonthlyClaimSystem.sln --configuration Release --no-build --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage"
+
+      # Publish test results to GitHub summary tab
+      - name: Publish Test Results
+        if: success() || failure()
+        uses: dorny/test-reporter@v1
+        with:
+          name: "xUnit Tests"
+          path: "**/TestResults/*.trx"
+          reporter: dotnet-trx
+
+      # Upload coverage as downloadable artifact
+      - name: Upload Coverage Report
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: "**/coverage.cobertura.xml"
