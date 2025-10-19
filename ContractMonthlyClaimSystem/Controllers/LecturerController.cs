@@ -82,6 +82,35 @@ namespace ContractMonthlyClaimSystem.Controllers
                 return View(model);
             }
 
+            // Validate uploaded files
+            // AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/s/t_68f4c1d5f7e08191b41d09967a63a506
+            long maxFileSize = 10 * 1024 * 1024; // 10 MB
+            string[] permittedExtensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md"];
+
+            if (model.Files is not null && model.Files.Count > 0)
+            {
+                foreach (var file in model.Files)
+                {
+                    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                    if (string.IsNullOrEmpty(ext) || !permittedExtensions.Contains(ext))
+                    {
+                        ModelState.AddModelError("Files", $"File '{file.FileName}' has an unsupported type.");
+                        continue;
+                    }
+
+                    if (file.Length > maxFileSize)
+                    {
+                        ModelState.AddModelError("Files", $"File '{file.FileName}' exceeds the 10 MB size limit.");
+                    }
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    model.Modules = await _claimService.GetModulesForLecturerAsync(lecturer.Id);
+                    return View(model);
+                }
+            }
+
             var claim = await _claimService.CreateClaimAsync(lecturer.Id, model);
             await _claimService.AddFilesToClaimAsync(claim, model.Files);
 

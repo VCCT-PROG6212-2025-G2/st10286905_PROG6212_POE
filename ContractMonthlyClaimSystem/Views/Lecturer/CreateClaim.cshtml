@@ -52,11 +52,20 @@
                     <label asp-for="Files" class="form-label fw-semibold">
                         <i class="bi bi-paperclip"></i> Upload Supporting Files
                     </label>
+
                     <input asp-for="Files" type="file" class="form-control" multiple
                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md" />
+
+                    <!-- Server-side validation (ModelState.AddModelError("Files", ...)) -->
+                    <span asp-validation-for="Files" class="text-danger small"></span>
+
                     <small class="form-text text-muted">
-                        You may upload multiple files (PDF, Word, Excel, etc.).
+                        You may upload multiple files (PDF, Word, Excel, etc.). Maximum size: 10 MB each.
                     </small>
+
+                    <!-- Alert + Info containers -->
+                    <div id="fileErrorContainer" class="mt-2"></div>
+                    <div id="fileInfoContainer" class="mt-2"></div>
                 </div>
 
                 <!-- Buttons -->
@@ -78,6 +87,7 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
+    @* Display preview of total payment amount *@
     <script>
         function calculatePayment() {
             const hours = parseFloat(document.getElementById("hoursWorked").value) || 0;
@@ -88,5 +98,65 @@
 
         document.getElementById("hoursWorked").addEventListener("input", calculatePayment);
         document.getElementById("hourlyRate").addEventListener("input", calculatePayment);
+    </script>
+
+    @* Client-side input validation for file uploads, with descriptive error messages *@
+    @* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f4b905-8f30-800b-9f73-1bb2052cdbaa *@
+    <script>
+        const fileInput = document.querySelector('input[type="file"]');
+        const errorDiv = document.getElementById("fileErrorContainer");
+        const infoDiv = document.getElementById("fileInfoContainer");
+        const form = document.querySelector('form');
+
+        fileInput.addEventListener('change', function () {
+            const allowed = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md"];
+            const maxSize = 10 * 1024 * 1024; // 10 MB per file
+            const errors = [];
+            let totalSize = 0;
+            let validFiles = 0;
+
+            // Always clear old messages first
+            errorDiv.innerHTML = "";
+            infoDiv.innerHTML = "";
+
+            for (const file of this.files) {
+                const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                const size = file.size;
+                totalSize += size;
+
+                if (!allowed.includes(ext)) {
+                    errors.push(`❌ <strong>${file.name}</strong> has an unsupported file type.`);
+                    continue;
+                }
+                if (size > maxSize) {
+                    errors.push(`⚠️ <strong>${file.name}</strong> exceeds the 10 MB size limit.`);
+                    continue;
+                }
+                validFiles++;
+            }
+
+            if (errors.length > 0) {
+                errorDiv.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>File upload error:</strong><br>${errors.join("<br>")}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                this.value = ""; // clear invalid selection
+            } else if (validFiles > 0) {
+                const totalMB = (totalSize / (1024 * 1024)).toFixed(2);
+                infoDiv.innerHTML = `
+                    <div class="alert alert-info py-2 mb-0">
+                        <i class="bi bi-check-circle-fill me-1 text-success"></i>
+                        ${validFiles} file${validFiles !== 1 ? "s" : ""} selected —
+                        total size: <strong>${totalMB} MB</strong>
+                    </div>`;
+            }
+        });
+
+        // Optional: clear messages when the form is submitted
+        form.addEventListener('submit', () => {
+            errorDiv.innerHTML = "";
+            infoDiv.innerHTML = "";
+        });
     </script>
 }
