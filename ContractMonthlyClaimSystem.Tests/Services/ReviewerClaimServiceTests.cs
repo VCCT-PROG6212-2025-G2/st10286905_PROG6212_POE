@@ -1,4 +1,6 @@
-﻿using System;
+﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f5452c-2788-800b-bbbc-175029690cfd
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
