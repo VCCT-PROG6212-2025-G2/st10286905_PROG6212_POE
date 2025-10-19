@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Admin,ProgramCoordinator")]
-    public class LecturerModuleManagerController(
+    public class ManageModulesController(
         ApplicationDbContext context,
         UserManager<AppUser> userManager
     ) : Controller
@@ -42,7 +42,7 @@ namespace ContractMonthlyClaimSystem.Controllers
 
             var allModules = await _context.Modules.ToListAsync();
 
-            var viewModel = new LecturerModuleManagerIndexViewModel
+            var viewModel = new ManageModulesIndexViewModel
             {
                 Lecturers = lecturerVMs,
                 Modules = allModules,
@@ -53,7 +53,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateModule(LecturerModuleManagerIndexViewModel model)
+        public async Task<IActionResult> CreateModule(ManageModulesIndexViewModel model)
         {
             if (
                 !string.IsNullOrWhiteSpace(model.NewModule.Name)

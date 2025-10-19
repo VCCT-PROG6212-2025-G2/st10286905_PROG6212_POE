@@ -1,6 +1,6 @@
 ﻿namespace ContractMonthlyClaimSystem.Models.ViewModels
 {
-    public class LecturerModuleManagerIndexViewModel
+    public class ManageModulesIndexViewModel
     {
         public List<LecturerViewModel> Lecturers { get; set; } = new();
         public List<Module> Modules { get; set; } = new();

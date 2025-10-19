@@ -8,12 +8,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Admin")]
-    public class UserRoleManagerController : Controller
+    public class ManageRolesController : Controller
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
-        public UserRoleManagerController(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
+        public ManageRolesController(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
             _roleManager = roleManager;
