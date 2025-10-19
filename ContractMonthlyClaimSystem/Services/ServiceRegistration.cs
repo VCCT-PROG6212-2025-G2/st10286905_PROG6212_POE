@@ -11,6 +11,7 @@ namespace ContractMonthlyClaimSystem.Services
             services.AddScoped<ILecturerClaimService, LecturerClaimService>();
             services.AddScoped<IReviewerClaimService, ReviewerClaimService>();
             services.AddScoped<IModuleService, ModuleService>();
+            services.AddScoped<IRoleService, RoleService>();
         }
     }
 }
