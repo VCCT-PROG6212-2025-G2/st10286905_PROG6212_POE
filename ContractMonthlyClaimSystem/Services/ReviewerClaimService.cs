@@ -79,7 +79,7 @@ namespace ContractMonthlyClaimSystem.Services
             { // User is ProgramCoordinator, so set ProgramCoordinator values
                 claim.ProgramCoordinatorUserId = user.Id;
                 claim.ProgramCoordinatorDecision = accept
-                    ? ClaimDecision.ACCEPTED
+                    ? ClaimDecision.VERIFIED
                     : ClaimDecision.REJECTED;
                 claim.ProgramCoordinatorComment = comment;
             }
@@ -87,7 +87,7 @@ namespace ContractMonthlyClaimSystem.Services
             { // User is AcademicManager, so set AcademicManager values
                 claim.AcademicManagerUserId = user.Id;
                 claim.AcademicManagerDecision = accept
-                    ? ClaimDecision.ACCEPTED
+                    ? ClaimDecision.APPROVED
                     : ClaimDecision.REJECTED;
                 claim.AcademicManagerComment = comment;
             }
@@ -101,8 +101,8 @@ namespace ContractMonthlyClaimSystem.Services
                 claim.ClaimStatus = ClaimStatus.PENDING_CONFIRM;
             else // Otherwise update status to whether both accepted or not
                 claim.ClaimStatus =
-                    claim.ProgramCoordinatorDecision == ClaimDecision.ACCEPTED
-                    && claim.AcademicManagerDecision == ClaimDecision.ACCEPTED
+                    claim.ProgramCoordinatorDecision == ClaimDecision.VERIFIED
+                    && claim.AcademicManagerDecision == ClaimDecision.APPROVED
                         ? ClaimStatus.ACCEPTED
                         : ClaimStatus.REJECTED;
 

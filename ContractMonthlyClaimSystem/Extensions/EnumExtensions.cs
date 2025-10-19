@@ -10,8 +10,9 @@ namespace ContractMonthlyClaimSystem.Extensions
             decision switch
             {
                 ClaimDecision.PENDING => "bg-info",
-                ClaimDecision.ACCEPTED => "bg-success",
                 ClaimDecision.REJECTED => "bg-danger",
+                ClaimDecision.VERIFIED => "bg-success",
+                ClaimDecision.APPROVED => "bg-success",
                 _ => "bg-info",
             };
 

@@ -3,7 +3,8 @@
     public enum ClaimDecision
     {
         PENDING,
-        ACCEPTED,
-        REJECTED
+        REJECTED,
+        VERIFIED,
+        APPROVED
     }
 }
