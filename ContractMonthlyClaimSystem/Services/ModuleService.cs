@@ -56,12 +56,10 @@ namespace ContractMonthlyClaimSystem.Services
 
         public async Task RemoveLecturerModuleAsync(string lecturerId, int moduleId)
         {
-            var lecturerModule = new LecturerModule
-            {
-                LecturerUserId = lecturerId,
-                ModuleId = moduleId,
-            };
-            if (await _context.LecturerModules.ContainsAsync(lecturerModule))
+            var lecturerModule = await _context.LecturerModules.FirstOrDefaultAsync(lm =>
+                lm.LecturerUserId == lecturerId && lm.ModuleId == moduleId
+            );
+            if (lecturerModule != null)
             {
                 _context.LecturerModules.Remove(lecturerModule);
                 await _context.SaveChangesAsync();
