@@ -10,6 +10,7 @@ namespace ContractMonthlyClaimSystem.Services
             services.AddScoped<IFileEncryptionService, FileEncryptionService>();
             services.AddScoped<ILecturerClaimService, LecturerClaimService>();
             services.AddScoped<IReviewerClaimService, ReviewerClaimService>();
+            services.AddScoped<IModuleService, ModuleService>();
         }
     }
 }

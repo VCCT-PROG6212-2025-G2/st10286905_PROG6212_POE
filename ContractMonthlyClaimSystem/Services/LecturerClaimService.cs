@@ -9,11 +9,13 @@ namespace ContractMonthlyClaimSystem.Services
     public class LecturerClaimService(
         ApplicationDbContext context,
         IWebHostEnvironment env,
+        IModuleService moduleService,
         IFileEncryptionService encryptionService
     ) : ILecturerClaimService
     {
         private readonly ApplicationDbContext _context = context;
         private readonly IWebHostEnvironment _env = env;
+        private readonly IModuleService _moduleService = moduleService;
         private readonly IFileEncryptionService _encryptionService = encryptionService;
 
         public async Task<List<ContractClaim>> GetClaimsForLecturerAsync(string lecturerId) =>
@@ -35,11 +37,7 @@ namespace ContractMonthlyClaimSystem.Services
             ).ToListAsync();
 
         public async Task<List<Module>> GetModulesForLecturerAsync(string lecturerId) =>
-            await (
-                from lm in _context.LecturerModules
-                where lm.LecturerUserId == lecturerId
-                select lm.Module
-            ).ToListAsync();
+            await _moduleService.GetModulesForLecturerAsync(lecturerId);
 
         public async Task<ContractClaim> CreateClaimAsync(
             string lecturerId,
