@@ -1,8 +1,7 @@
 # PROG6212 POE
 
 ## Video Showcase of WebApp	
-[![Video Showcase of WebApp](https://img.youtube.com/vi/KnYJyxbUCdQ/maxresdefault.jpg)](https://www.youtube.com/watch?v=KnYJyxbUCdQ)
-Click the thumbnail above to watch the video on YouTube.
+[Click here](https://www.youtube.com/watch?v=KnYJyxbUCdQ) to watch the video on YouTube.
 
 ## Default Login Credentials
 ### Admin Account
