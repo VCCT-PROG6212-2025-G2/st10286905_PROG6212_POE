@@ -1,162 +1,172 @@
 ﻿@model CreateClaimViewModel
 @* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca99b5-dc0c-800b-b554-c315e49df063 *@
 
-<div class="container mt-4">
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-header bg-primary text-white fw-bold">
-            <i class="bi bi-plus-circle"></i> Create New Claim
-        </div>
-        <div class="card-body">
-            <form asp-action="CreateClaim" method="post" enctype="multipart/form-data">
+@if (Model.Modules == null || Model.Modules.Count() == 0)
+{
+    <div class="text-center">
+        <h1 class="display-4">Sorry, @User.Identity.Name</h1>
+        <p>An administrator or program coordinator must first assign your modules to you before you may create a claim.</p>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="bi bi-plus-circle"></i> Create New Claim
+            </div>
+            <div class="card-body">
+                <form asp-action="CreateClaim" method="post" enctype="multipart/form-data">
 
-                <!-- Module -->
-                <div class="mb-3">
-                    <label asp-for="ModuleId" class="form-label fw-semibold"></label>
-                    <select asp-for="ModuleId" asp-items="@(new SelectList(Model.Modules, "Id", "Name"))"
-                            class="form-select"></select>
-                    <span asp-validation-for="ModuleId" class="text-danger small"></span>
-                </div>
-
-                <!-- Hours & Rate -->
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="HoursWorked" class="form-label fw-semibold"></label>
-                        <input asp-for="HoursWorked" class="form-control" id="hoursWorked" placeholder="e.g. 12.5" />
-                        <span asp-validation-for="HoursWorked" class="text-danger small"></span>
+                    <!-- Module -->
+                    <div class="mb-3">
+                        <label asp-for="ModuleId" class="form-label fw-semibold"></label>
+                        <select asp-for="ModuleId" asp-items="@(new SelectList(Model.Modules, "Id", "Name"))"
+                                class="form-select"></select>
+                        <span asp-validation-for="ModuleId" class="text-danger small"></span>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label asp-for="HourlyRate" class="form-label fw-semibold"></label>
-                        <input asp-for="HourlyRate" class="form-control" id="hourlyRate" placeholder="e.g. 250" />
-                        <span asp-validation-for="HourlyRate" class="text-danger small"></span>
+
+                    <!-- Hours & Rate -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="HoursWorked" class="form-label fw-semibold"></label>
+                            <input asp-for="HoursWorked" class="form-control" id="hoursWorked" placeholder="e.g. 12.5" />
+                            <span asp-validation-for="HoursWorked" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="HourlyRate" class="form-label fw-semibold"></label>
+                            <input asp-for="HourlyRate" class="form-control" id="hourlyRate" placeholder="e.g. 250" />
+                            <span asp-validation-for="HourlyRate" class="text-danger small"></span>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Estimated Payment -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Estimated Payment</label>
-                    <div class="alert alert-info d-flex align-items-center p-2 mb-0">
-                        <i class="bi bi-cash-coin me-2"></i>
-                        <span id="paymentAmount" class="fw-bold">R0.00</span>
+                    <!-- Estimated Payment -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Estimated Payment</label>
+                        <div class="alert alert-info d-flex align-items-center p-2 mb-0">
+                            <i class="bi bi-cash-coin me-2"></i>
+                            <span id="paymentAmount" class="fw-bold">R0.00</span>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Lecturer Comment -->
-                <div class="mb-3">
-                    <label asp-for="LecturerComment" class="form-label fw-semibold"></label>
-                    <textarea asp-for="LecturerComment" class="form-control" rows="3"
-                              placeholder="Enter any additional details..."></textarea>
-                </div>
+                    <!-- Lecturer Comment -->
+                    <div class="mb-3">
+                        <label asp-for="LecturerComment" class="form-label fw-semibold"></label>
+                        <textarea asp-for="LecturerComment" class="form-control" rows="3"
+                                  placeholder="Enter any additional details..."></textarea>
+                    </div>
 
-                <!-- File Upload -->
-                <div class="mb-3">
-                    <label asp-for="Files" class="form-label fw-semibold">
-                        <i class="bi bi-paperclip"></i> Upload Supporting Files
-                    </label>
+                    <!-- File Upload -->
+                    <div class="mb-3">
+                        <label asp-for="Files" class="form-label fw-semibold">
+                            <i class="bi bi-paperclip"></i> Upload Supporting Files
+                        </label>
 
-                    <input asp-for="Files" type="file" class="form-control" multiple
-                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md" />
+                        <input asp-for="Files" type="file" class="form-control" multiple
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md" />
 
-                    <!-- Server-side validation (ModelState.AddModelError("Files", ...)) -->
-                    <span asp-validation-for="Files" class="text-danger small"></span>
+                        <!-- Server-side validation (ModelState.AddModelError("Files", ...)) -->
+                        <span asp-validation-for="Files" class="text-danger small"></span>
 
-                    <small class="form-text text-muted">
-                        You may upload multiple files (PDF, Word, Excel, etc.). Maximum size: 10 MB each.
-                    </small>
+                        <small class="form-text text-muted">
+                            You may upload multiple files (PDF, Word, Excel, etc.). Maximum size: 10 MB each.
+                        </small>
 
-                    <!-- Alert + Info containers -->
-                    <div id="fileErrorContainer" class="mt-2"></div>
-                    <div id="fileInfoContainer" class="mt-2"></div>
-                </div>
+                        <!-- Alert + Info containers -->
+                        <div id="fileErrorContainer" class="mt-2"></div>
+                        <div id="fileInfoContainer" class="mt-2"></div>
+                    </div>
 
-                <!-- Buttons -->
-                <div class="d-flex justify-content-end">
-                    <a asp-action="Index" class="btn btn-outline-secondary me-2">
-                        <i class="bi bi-arrow-left"></i> Cancel
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-send"></i> Submit Claim
-                    </button>
-                </div>
-            </form>
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-end">
+                        <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Submit Claim
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-
-    @* Display preview of total payment amount *@
-    <script>
-        function calculatePayment() {
-            const hours = parseFloat(document.getElementById("hoursWorked").value) || 0;
-            const rate = parseFloat(document.getElementById("hourlyRate").value) || 0;
-            const total = hours * rate;
-            document.getElementById("paymentAmount").textContent = "R" + total.toFixed(2);
+    @section Scripts {
+        @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
         }
 
-        document.getElementById("hoursWorked").addEventListener("input", calculatePayment);
-        document.getElementById("hourlyRate").addEventListener("input", calculatePayment);
-    </script>
-
-    @* Client-side input validation for file uploads, with descriptive error messages *@
-    @* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f4b905-8f30-800b-9f73-1bb2052cdbaa *@
-    <script>
-        const fileInput = document.querySelector('input[type="file"]');
-        const errorDiv = document.getElementById("fileErrorContainer");
-        const infoDiv = document.getElementById("fileInfoContainer");
-        const form = document.querySelector('form');
-
-        fileInput.addEventListener('change', function () {
-            const allowed = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md"];
-            const maxSize = 10 * 1024 * 1024; // 10 MB per file
-            const errors = [];
-            let totalSize = 0;
-            let validFiles = 0;
-
-            // Always clear old messages first
-            errorDiv.innerHTML = "";
-            infoDiv.innerHTML = "";
-
-            for (const file of this.files) {
-                const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-                const size = file.size;
-                totalSize += size;
-
-                if (!allowed.includes(ext)) {
-                    errors.push(`❌ <strong>${file.name}</strong> has an unsupported file type.`);
-                    continue;
-                }
-                if (size > maxSize) {
-                    errors.push(`⚠️ <strong>${file.name}</strong> exceeds the 10 MB size limit.`);
-                    continue;
-                }
-                validFiles++;
+        @* Display preview of total payment amount *@
+        <script>
+            function calculatePayment() {
+                const hours = parseFloat(document.getElementById("hoursWorked").value) || 0;
+                const rate = parseFloat(document.getElementById("hourlyRate").value) || 0;
+                const total = hours * rate;
+                document.getElementById("paymentAmount").textContent = "R" + total.toFixed(2);
             }
 
-            if (errors.length > 0) {
-                errorDiv.innerHTML = `
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <strong>File upload error:</strong><br>${errors.join("<br>")}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>`;
-                this.value = ""; // clear invalid selection
-            } else if (validFiles > 0) {
-                const totalMB = (totalSize / (1024 * 1024)).toFixed(2);
-                infoDiv.innerHTML = `
-                    <div class="alert alert-info py-2 mb-0">
-                        <i class="bi bi-check-circle-fill me-1 text-success"></i>
-                        ${validFiles} file${validFiles !== 1 ? "s" : ""} selected —
-                        total size: <strong>${totalMB} MB</strong>
-                    </div>`;
-            }
-        });
+            document.getElementById("hoursWorked").addEventListener("input", calculatePayment);
+            document.getElementById("hourlyRate").addEventListener("input", calculatePayment);
+        </script>
 
-        // Optional: clear messages when the form is submitted
-        form.addEventListener('submit', () => {
-            errorDiv.innerHTML = "";
-            infoDiv.innerHTML = "";
-        });
-    </script>
+        @* Client-side input validation for file uploads, with descriptive error messages *@
+        @* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f4b905-8f30-800b-9f73-1bb2052cdbaa *@
+        <script>
+            const fileInput = document.querySelector('input[type="file"]');
+            const errorDiv = document.getElementById("fileErrorContainer");
+            const infoDiv = document.getElementById("fileInfoContainer");
+            const form = document.querySelector('form');
+
+            fileInput.addEventListener('change', function () {
+                const allowed = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md"];
+                const maxSize = 10 * 1024 * 1024; // 10 MB per file
+                const errors = [];
+                let totalSize = 0;
+                let validFiles = 0;
+
+                // Always clear old messages first
+                errorDiv.innerHTML = "";
+                infoDiv.innerHTML = "";
+
+                for (const file of this.files) {
+                    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                    const size = file.size;
+                    totalSize += size;
+
+                    if (!allowed.includes(ext)) {
+                        errors.push(`❌ <strong>${file.name}</strong> has an unsupported file type.`);
+                        continue;
+                    }
+                    if (size > maxSize) {
+                        errors.push(`⚠️ <strong>${file.name}</strong> exceeds the 10 MB size limit.`);
+                        continue;
+                    }
+                    validFiles++;
+                }
+
+                if (errors.length > 0) {
+                    errorDiv.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>File upload error:</strong><br>${errors.join("<br>")}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`;
+                    this.value = ""; // clear invalid selection
+                } else if (validFiles > 0) {
+                    const totalMB = (totalSize / (1024 * 1024)).toFixed(2);
+                    infoDiv.innerHTML = `
+                        <div class="alert alert-info py-2 mb-0">
+                            <i class="bi bi-check-circle-fill me-1 text-success"></i>
+                            ${validFiles} file${validFiles !== 1 ? "s" : ""} selected —
+                            total size: <strong>${totalMB} MB</strong>
+                        </div>`;
+                }
+            });
+
+            // Optional: clear messages when the form is submitted
+            form.addEventListener('submit', () => {
+                errorDiv.innerHTML = "";
+                infoDiv.innerHTML = "";
+            });
+        </script>
+    }
 }
