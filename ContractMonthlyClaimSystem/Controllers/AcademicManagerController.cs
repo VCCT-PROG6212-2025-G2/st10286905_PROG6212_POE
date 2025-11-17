@@ -2,7 +2,6 @@
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ContractMonthlyClaimSystem.Controllers
@@ -10,11 +9,11 @@ namespace ContractMonthlyClaimSystem.Controllers
     [Authorize(Roles = "AcademicManager")]
     public class AcademicManagerController(
         IReviewerClaimService reviewerClaimService,
-        UserManager<AppUser> userManager
+        IUserService userService
     ) : Controller
     {
         private readonly IReviewerClaimService _reviewerClaimService = reviewerClaimService;
-        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly IUserService _userService = userService;
 
         public async Task<IActionResult> Index()
         {
@@ -111,7 +110,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AcceptClaim(int id, string? comment)
         {
-            var user = await _userManager.GetUserAsync(HttpContext.User);
+            var user = await _userService.GetUserAsync(User.Identity?.Name);
 
             var res = await _reviewerClaimService.ReviewClaim(id, user.Id, accept: true, comment);
             if (res == false)
@@ -124,7 +123,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectClaim(int id, string? comment)
         {
-            var user = await _userManager.GetUserAsync(HttpContext.User);
+            var user = await _userService.GetUserAsync(User.Identity?.Name);
 
             var res = await _reviewerClaimService.ReviewClaim(id, user.Id, accept: false, comment);
             if (res == false)

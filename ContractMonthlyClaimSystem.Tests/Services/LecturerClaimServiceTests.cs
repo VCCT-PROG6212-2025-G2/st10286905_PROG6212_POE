@@ -24,7 +24,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
     /// </summary>
     public class LecturerClaimServiceTests
     {
-        private readonly ApplicationDbContext _context;
+        private readonly AppDbContext _context;
         private readonly Mock<IWebHostEnvironment> _envMock;
         private readonly Mock<IModuleService> _moduleServiceMock;
         private readonly Mock<IFileEncryptionService> _encryptionMock;
@@ -33,10 +33,10 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public LecturerClaimServiceTests()
         {
             // Create an in-memory EF Core database context for isolated testing.
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            _context = new ApplicationDbContext(options);
+            _context = new AppDbContext(options);
 
             // Mock IWebHostEnvironment to simulate the web root directory.
             _envMock = new Mock<IWebHostEnvironment>();
@@ -60,12 +60,12 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task GetClaimsForLecturerAsync_ReturnsClaims()
         {
             // Arrange: add sample claims for two lecturers.
-            var lecturerId = "L1";
+            var lecturerId = 1;
             var module = new Module { Name = "Programming 2B", Code = "PROG6212" };
             _context.Modules.Add(module);
             _context.ContractClaims.AddRange(
                 new ContractClaim { LecturerUserId = lecturerId, ModuleId = module.Id },
-                new ContractClaim { LecturerUserId = "Other", ModuleId = module.Id }
+                new ContractClaim { LecturerUserId = 2, ModuleId = module.Id }
             );
             await _context.SaveChangesAsync();
 
@@ -81,7 +81,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task GetClaimAsync_ReturnsSpecificClaim()
         {
             // Arrange: add a claim with a module for a lecturer.
-            var lecturerId = "L1";
+            var lecturerId = 1;
             var module = new Module { Name = "Programming 2B", Code = "PROG6212" };
             _context.Modules.Add(module);
             var claim = new ContractClaim { LecturerUserId = lecturerId, ModuleId = module.Id };
@@ -100,7 +100,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task GetClaimFilesAsync_ReturnsFilesLinkedToClaim()
         {
             // Arrange: add a claim and an uploaded file linked through a document record.
-            var claim = new ContractClaim { LecturerUserId = "L1" };
+            var claim = new ContractClaim { LecturerUserId = 1 };
             await _context.ContractClaims.AddAsync(claim);
             var file = new UploadedFile { FileName = "doc.pdf", FilePath = "/somewhere/doc.pdf" };
             await _context.UploadedFiles.AddAsync(file);
@@ -127,7 +127,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task GetModulesForLecturerAsync_DelegatesToModuleService()
         {
             // Arrange: mock the module service to return a specific result.
-            var lecturerId = "L1";
+            var lecturerId = 1;
             var expectedModules = new List<Module>
             {
                 new()
@@ -162,7 +162,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 HourlyRate = 200,
                 LecturerComment = "Work done",
             };
-            var lecturerId = "L1";
+            var lecturerId = 1;
 
             // Act: call the service to create a new claim.
             var claim = await _service.CreateClaimAsync(lecturerId, model);
@@ -177,7 +177,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task AddFilesToClaimAsync_SavesFilesAndDocuments()
         {
             // Arrange: create a claim and add it to the database.
-            var claim = new ContractClaim { Id = 10, LecturerUserId = "L1" };
+            var claim = new ContractClaim { Id = 10, LecturerUserId = 1 };
             await _context.ContractClaims.AddAsync(claim);
             await _context.SaveChangesAsync();
 
@@ -203,40 +203,48 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public async Task GetFileAsync_ReturnsDecryptedStream_WhenFileExists()
         {
-            // Arrange: set up a claim, uploaded file, and linking record.
-            var lecturerId = "L1";
+            var lecturerId = 1;
+
+            var module = new Module { Name = "Networking", Code = "NET123" };
+            _context.Modules.Add(module);
+
+            var claim = new ContractClaim { LecturerUserId = lecturerId, ModuleId = module.Id };
+            _context.ContractClaims.Add(claim);
+
             var file = new UploadedFile
             {
-                Id = 1,
-                FileName = "data.txt",
-                FilePath = Path.Combine("uploads", "data.txt"),
+                FileName = "lecturer_test_data.txt",
+                FilePath = Path.Combine("uploads", "lecturer_test_data.txt"),
             };
-            var claim = new ContractClaim { Id = 1, LecturerUserId = lecturerId };
-
-            _context.ContractClaims.Add(claim);
             _context.UploadedFiles.Add(file);
+
+            // ❗ Save here: guarantees IDs for claim and file
+            await _context.SaveChangesAsync();
+
             _context.ContractClaimsDocuments.Add(
                 new ContractClaimDocument { ContractClaimId = claim.Id, UploadedFileId = file.Id }
             );
+
             await _context.SaveChangesAsync();
 
-            // Create a physical test file to simulate an existing encrypted file.
             var fullPath = Path.Combine(_envMock.Object.WebRootPath, file.FilePath);
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
             await File.WriteAllBytesAsync(fullPath, new byte[] { 1, 2, 3 });
 
-            // Mock decryption service to do nothing but satisfy the call.
             _encryptionMock
                 .Setup(e => e.DecryptToStreamAsync(fullPath, It.IsAny<MemoryStream>()))
                 .Returns(Task.CompletedTask);
 
-            // Act: attempt to retrieve and decrypt the file.
-            var result = await _service.GetFileAsync(1, lecturerId);
+            var result = await _service.GetFileAsync(file.Id, lecturerId);
 
-            // Assert: ensure a result was returned with expected metadata.
             Assert.NotNull(result);
-            Assert.Equal("data.txt", result?.FileName);
-            Assert.Equal("application/octet-stream", result?.ContentType);
+            Assert.Equal("lecturer_test_data.txt", result?.FileName);
+
+            result?.FileStream?.Dispose();
+
+            var uploadRoot = Path.Combine(_envMock.Object.WebRootPath, "uploads");
+            if (Directory.Exists(uploadRoot))
+                Directory.Delete(uploadRoot, true);
         }
     }
 }

@@ -20,17 +20,17 @@ namespace ContractMonthlyClaimSystem.Tests.Services
     /// </summary>
     public class ModuleServiceTests
     {
-        private readonly ApplicationDbContext _context;
+        private readonly AppDbContext _context;
         private readonly ModuleService _service;
 
         public ModuleServiceTests()
         {
             // Create an in-memory EF Core database for each test instance.
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
-            _context = new ApplicationDbContext(options);
+            _context = new AppDbContext(options);
             _service = new ModuleService(_context);
         }
 
@@ -57,7 +57,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task GetModulesForLecturerAsync_ReturnsLinkedModules()
         {
             // Arrange: create a lecturer-module relationship.
-            var lecturerId = "L1";
+            var lecturerId = 1;
             var module = new Module
             {
                 Id = 1,
@@ -153,7 +153,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task AddLecturerModuleAsync_AddsAssociation_WhenNotExisting()
         {
             // Arrange: prepare a lecturer and module.
-            var lecturerId = "L1";
+            var lecturerId = 1;
             var module = new Module
             {
                 Id = 10,
@@ -177,7 +177,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task AddLecturerModuleAsync_DoesNotDuplicateExistingLink()
         {
             // Arrange: add a link that already exists.
-            var lecturerId = "L1";
+            var lecturerId = 1;
             var module = new Module
             {
                 Id = 11,
@@ -201,7 +201,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task RemoveLecturerModuleAsync_RemovesExistingLink()
         {
             // Arrange: create and save a lecturer-module link.
-            var lecturerId = "L1";
+            var lecturerId = 1;
             var module = new Module
             {
                 Id = 12,
@@ -224,7 +224,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task RemoveLecturerModuleAsync_DoesNothing_IfLinkNotFound()
         {
             // Arrange: no links exist in DB.
-            var lecturerId = "L1";
+            var lecturerId = 1;
             var moduleId = 999;
 
             // Act: attempt to remove nonexistent link.

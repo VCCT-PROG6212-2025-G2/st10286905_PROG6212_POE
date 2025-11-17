@@ -1,8 +1,9 @@
 using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models;
+using ContractMonthlyClaimSystem.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using ContractMonthlyClaimSystem.Services;
 
 internal class Program
 {
@@ -19,10 +20,7 @@ internal class Program
         // Add identity with roles
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-        builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
-        builder.Services.AddDefaultIdentity<AppUser>(options => options.SignIn.RequireConfirmedAccount = true)
-            .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<ApplicationDbContext>();
+        builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
         // Add database seeder as scoped service
         builder.Services.AddScoped<DatabaseSeeder>();
@@ -30,12 +28,22 @@ internal class Program
         // Add our custom services
         builder.Services.AddApplicationServices();
 
+        // Add auth
+        builder
+            .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(options =>
+            {
+                options.LoginPath = "/Account/Login";
+                options.AccessDeniedPath = "/Account/AccessDenied";
+            });
+        builder.Services.AddAuthorization();
+
         var app = builder.Build();
 
         using (var scope = app.Services.CreateScope())
         {
             var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-            await seeder.Seed();
+            await seeder.SeedAsync();
         }
 
         // Configure the HTTP request pipeline.
@@ -51,13 +59,13 @@ internal class Program
 
         app.UseRouting();
 
+        // Use auth
         app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllerRoute(
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
-        app.MapRazorPages();
 
         app.Run();
     }

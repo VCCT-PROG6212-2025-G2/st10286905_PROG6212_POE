@@ -2,19 +2,19 @@
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "ProgramCoordinator")]
     public class ProgramCoordinatorController(
         IReviewerClaimService reviewerClaimService,
-        UserManager<AppUser> userManager
+        IUserService userService
     ) : Controller
     {
         private readonly IReviewerClaimService _reviewerClaimService = reviewerClaimService;
-        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly IUserService _userService = userService;
 
         public async Task<IActionResult> Index()
         {
@@ -32,7 +32,7 @@ namespace ContractMonthlyClaimSystem.Controllers
                         .Select(c => new ReviewerClaimRowViewModel
                         {
                             Id = c.Id,
-                            LecturerName = c.LecturerUser.UserName,
+                            LecturerName = $"{c.LecturerUser.FirstName} {c.LecturerUser.LastName}",
                             ModuleName = c.Module.Name,
                             PaymentAmount = c.HoursWorked * c.HourlyRate,
                             ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
@@ -50,7 +50,7 @@ namespace ContractMonthlyClaimSystem.Controllers
                         .Select(c => new ReviewerClaimRowViewModel
                         {
                             Id = c.Id,
-                            LecturerName = c.LecturerUser.UserName,
+                            LecturerName = $"{c.LecturerUser.FirstName} {c.LecturerUser.LastName}",
                             ModuleName = c.Module.Name,
                             PaymentAmount = c.HoursWorked * c.HourlyRate,
                             ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
@@ -65,7 +65,7 @@ namespace ContractMonthlyClaimSystem.Controllers
                         .Select(c => new ReviewerClaimRowViewModel
                         {
                             Id = c.Id,
-                            LecturerName = c.LecturerUser.UserName,
+                            LecturerName = $"{c.LecturerUser.FirstName} {c.LecturerUser.LastName}",
                             ModuleName = c.Module.Name,
                             PaymentAmount = c.HoursWorked * c.HourlyRate,
                             ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
@@ -89,16 +89,16 @@ namespace ContractMonthlyClaimSystem.Controllers
             var vm = new ReviewerClaimDetailsViewModel
             {
                 Id = claim.Id,
-                LecturerName = claim.LecturerUser.UserName,
+                LecturerName = $"{claim.LecturerUser.FirstName} {claim.LecturerUser.LastName}",
                 ModuleName = claim.Module.Name,
                 HoursWorked = claim.HoursWorked,
                 HourlyRate = claim.HourlyRate,
                 PaymentAmount = claim.HoursWorked * claim.HourlyRate,
                 LecturerComment = claim.LecturerComment,
-                ProgramCoordinatorName = claim.ProgramCoordinatorUser?.UserName,
+                ProgramCoordinatorName = $"{claim.ProgramCoordinatorUser?.FirstName} {claim.ProgramCoordinatorUser?.LastName}",
                 ProgramCoordinatorDecision = claim.ProgramCoordinatorDecision,
                 ProgramCoordinatorComment = claim.ProgramCoordinatorComment,
-                AcademicManagerName = claim.AcademicManagerUser?.UserName,
+                AcademicManagerName = $"{claim.AcademicManagerUser?.FirstName} {claim.AcademicManagerUser?.LastName}",
                 AcademicManagerDecision = claim.AcademicManagerDecision,
                 AcademicManagerComment = claim.AcademicManagerComment,
                 ClaimStatus = claim.ClaimStatus,
@@ -111,7 +111,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AcceptClaim(int id, string? comment)
         {
-            var user = await _userManager.GetUserAsync(HttpContext.User);
+            var user = await _userService.GetUserAsync(User.Identity?.Name);
 
             var res = await _reviewerClaimService.ReviewClaim(id, user.Id, accept: true, comment);
             if (res == false)
@@ -124,7 +124,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectClaim(int id, string? comment)
         {
-            var user = await _userManager.GetUserAsync(HttpContext.User);
+            var user = await _userService.GetUserAsync(User.Identity?.Name);
 
             var res = await _reviewerClaimService.ReviewClaim(id, user.Id, accept: false, comment);
             if (res == false)

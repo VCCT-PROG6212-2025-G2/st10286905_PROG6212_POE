@@ -5,12 +5,12 @@ namespace ContractMonthlyClaimSystem.Services.Interfaces
 {
     public interface ILecturerClaimService
     {
-        Task<List<ContractClaim>> GetClaimsForLecturerAsync(string lecturerId);
-        Task<ContractClaim?> GetClaimAsync(int claimId, string lecturerId);
+        Task<List<ContractClaim>> GetClaimsForLecturerAsync(int lecturerId);
+        Task<ContractClaim?> GetClaimAsync(int claimId, int lecturerId);
         Task<List<UploadedFile>?> GetClaimFilesAsync(ContractClaim claim);
-        Task<List<Module>> GetModulesForLecturerAsync(string lecturerId);
-        Task<ContractClaim> CreateClaimAsync(string lecturerId, CreateClaimViewModel model);
+        Task<List<Module>> GetModulesForLecturerAsync(int lecturerId);
+        Task<ContractClaim> CreateClaimAsync(int lecturerId, CreateClaimViewModel model);
         Task AddFilesToClaimAsync(ContractClaim claim, List<IFormFile> files);
-        Task<(string FileName, MemoryStream FileStream, string ContentType)?> GetFileAsync(int fileId, string lecturerId);
+        Task<(string FileName, MemoryStream FileStream, string ContentType)?> GetFileAsync(int fileId, int lecturerId);
     }
 }

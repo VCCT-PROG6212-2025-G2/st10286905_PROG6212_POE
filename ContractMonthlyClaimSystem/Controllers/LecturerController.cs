@@ -2,7 +2,6 @@
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ContractMonthlyClaimSystem.Controllers
@@ -10,16 +9,15 @@ namespace ContractMonthlyClaimSystem.Controllers
     [Authorize(Roles = "Lecturer")]
     public class LecturerController(
         ILecturerClaimService claimService,
-        UserManager<AppUser> userManager
+        IUserService userService
     ) : Controller
     {
         private readonly ILecturerClaimService _claimService = claimService;
-        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly IUserService _userService = userService;
 
         public async Task<IActionResult> Index()
         {
-            // Get lecturer user from HttpContext. Ref: https://stackoverflow.com/a/42493106
-            var lecturer = await _userManager.GetUserAsync(HttpContext.User);
+            var lecturer = await _userService.GetUserAsync(User.Identity?.Name);
 
             var claims = await _claimService.GetClaimsForLecturerAsync(lecturer.Id);
 
@@ -60,7 +58,7 @@ namespace ContractMonthlyClaimSystem.Controllers
 
         public async Task<IActionResult> CreateClaim()
         {
-            var lecturer = await _userManager.GetUserAsync(HttpContext.User);
+            var lecturer = await _userService.GetUserAsync(User.Identity?.Name);
 
             // Get modules taught by lecturer.
             var modules = await _claimService.GetModulesForLecturerAsync(lecturer.Id);
@@ -73,7 +71,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateClaim(CreateClaimViewModel model)
         {
-            var lecturer = await _userManager.GetUserAsync(HttpContext.User);
+            var lecturer = await _userService.GetUserAsync(User.Identity?.Name);
 
             if (!ModelState.IsValid)
             {
@@ -119,7 +117,7 @@ namespace ContractMonthlyClaimSystem.Controllers
 
         public async Task<IActionResult> ClaimDetails(int id)
         {
-            var lecturer = await _userManager.GetUserAsync(HttpContext.User);
+            var lecturer = await _userService.GetUserAsync(User.Identity?.Name);
 
             var claim = await _claimService.GetClaimAsync(id, lecturer.Id);
 
@@ -148,7 +146,7 @@ namespace ContractMonthlyClaimSystem.Controllers
 
         public async Task<IActionResult> DownloadFile(int id)
         {
-            var lecturer = await _userManager.GetUserAsync(HttpContext.User);
+            var lecturer = await _userService.GetUserAsync(User.Identity?.Name);
 
             var file = await _claimService.GetFileAsync(id, lecturer.Id); 
             if (file == null)

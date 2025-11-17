@@ -7,24 +7,24 @@ using Microsoft.EntityFrameworkCore;
 namespace ContractMonthlyClaimSystem.Services
 {
     public class LecturerClaimService(
-        ApplicationDbContext context,
+        AppDbContext context,
         IWebHostEnvironment env,
         IModuleService moduleService,
         IFileEncryptionService encryptionService
     ) : ILecturerClaimService
     {
-        private readonly ApplicationDbContext _context = context;
+        private readonly AppDbContext _context = context;
         private readonly IWebHostEnvironment _env = env;
         private readonly IModuleService _moduleService = moduleService;
         private readonly IFileEncryptionService _encryptionService = encryptionService;
 
-        public async Task<List<ContractClaim>> GetClaimsForLecturerAsync(string lecturerId) =>
+        public async Task<List<ContractClaim>> GetClaimsForLecturerAsync(int lecturerId) =>
             await _context
                 .ContractClaims.Include(c => c.Module)
                 .Where(c => c.LecturerUserId == lecturerId)
                 .ToListAsync();
 
-        public async Task<ContractClaim?> GetClaimAsync(int claimId, string lecturerId) =>
+        public async Task<ContractClaim?> GetClaimAsync(int claimId, int lecturerId) =>
             await _context
                 .ContractClaims.Include(c => c.Module)
                 .FirstOrDefaultAsync(c => c.Id == claimId && c.LecturerUserId == lecturerId);
@@ -36,11 +36,11 @@ namespace ContractMonthlyClaimSystem.Services
                 select d.UploadedFile
             ).ToListAsync();
 
-        public async Task<List<Module>> GetModulesForLecturerAsync(string lecturerId) =>
+        public async Task<List<Module>> GetModulesForLecturerAsync(int lecturerId) =>
             await _moduleService.GetModulesForLecturerAsync(lecturerId);
 
         public async Task<ContractClaim> CreateClaimAsync(
-            string lecturerId,
+            int lecturerId,
             CreateClaimViewModel model
         )
         {
@@ -103,7 +103,7 @@ namespace ContractMonthlyClaimSystem.Services
             string FileName,
             MemoryStream FileStream,
             string ContentType
-        )?> GetFileAsync(int fileId, string lecturerId)
+        )?> GetFileAsync(int fileId, int lecturerId)
         {
             var file = await (
                 from d in _context.ContractClaimsDocuments

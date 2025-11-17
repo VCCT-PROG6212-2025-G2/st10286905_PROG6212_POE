@@ -3,17 +3,16 @@ using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Admin")]
-    public class ManageRolesController(IRoleService roleService, UserManager<AppUser> userManager)
+    public class ManageRolesController(IRoleService roleService, IUserService userService)
         : Controller
     {
         private readonly IRoleService _roleService = roleService;
-        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly IUserService _userService = userService;
 
         // Display all users with their roles, plus list of roles
         public async Task<IActionResult> Index()
@@ -33,9 +32,9 @@ namespace ContractMonthlyClaimSystem.Controllers
         }
 
         // Manage user roles (GET)
-        public async Task<IActionResult> Manage(string userId)
+        public async Task<IActionResult> Manage(int userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userService.GetUserAsync(userId);
             if (user == null)
                 return NotFound();
 
@@ -51,7 +50,7 @@ namespace ContractMonthlyClaimSystem.Controllers
                     new RoleSelectionViewModel
                     {
                         RoleName = role.Name,
-                        Selected = await _userManager.IsInRoleAsync(user, role.Name),
+                        Selected = await _userService.IsUserInRoleAsync(userId, role.Name),
                     }
                 );
             }
@@ -63,7 +62,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> Manage(ManageUserRolesViewModel model)
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
+            var user = await _userService.GetUserAsync(model.UserId);
             if (user == null)
                 return NotFound();
 

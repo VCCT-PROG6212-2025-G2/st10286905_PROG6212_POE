@@ -1,10 +1,12 @@
-﻿namespace ContractMonthlyClaimSystem.Models
+﻿using ContractMonthlyClaimSystem.Models.Auth;
+
+namespace ContractMonthlyClaimSystem.Models
 {
     public class ContractClaim
     {
         public int Id { get; set; }
 
-        public string LecturerUserId { get; set; }
+        public int LecturerUserId { get; set; }
         public virtual AppUser LecturerUser { get; set; }
 
         public int ModuleId { get; set; }
@@ -14,12 +16,12 @@
         public decimal HourlyRate { get; set; }
         public string? LecturerComment { get; set; }
 
-        public string? ProgramCoordinatorUserId { get; set; }
+        public int? ProgramCoordinatorUserId { get; set; }
         public virtual AppUser? ProgramCoordinatorUser { get; set; }
         public ClaimDecision ProgramCoordinatorDecision { get; set; } = ClaimDecision.PENDING;
         public string? ProgramCoordinatorComment { get; set; }
 
-        public string? AcademicManagerUserId { get; set; }
+        public int? AcademicManagerUserId { get; set; }
         public virtual AppUser? AcademicManagerUser { get; set; }
         public ClaimDecision AcademicManagerDecision { get; set; } = ClaimDecision.PENDING;
         public string? AcademicManagerComment { get; set; }

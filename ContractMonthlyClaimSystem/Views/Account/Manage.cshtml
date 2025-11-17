@@ -1,0 +1,91 @@
+﻿@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/6911f8f7-a06c-800b-a7aa-9d3ef0330f8c *@
+
+@model ManageAccountViewModel
+@{
+    ViewData["Title"] = "Manage Account";
+}
+
+<div class="container py-5" style="max-width: 600px;">
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card mx-auto">
+        <div class="card-body p-4">
+            <h3 class="text-center mb-4">Manage Your Account</h3>
+
+            <form asp-action="Manage" method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="UserName" class="form-control" readonly />
+                    <label asp-for="UserName"></label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="Email" class="form-control" placeholder="Email" />
+                    <label asp-for="Email"></label>
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="FirstName" class="form-control" placeholder="First Name" />
+                    <label asp-for="FirstName"></label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input asp-for="LastName" class="form-control" placeholder="Last Name" />
+                    <label asp-for="LastName"></label>
+                </div>
+
+                <div class="form-floating mb-4">
+                    <input asp-for="Password" class="form-control" placeholder="Current Password" />
+                    <label asp-for="Password"></label>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 mb-2">Save Changes</button>
+            </form>
+
+            <hr class="my-4" />
+
+            <form asp-action="ChangePassword" method="post" novalidate>
+                <h5 class="mb-3">Change Password</h5>
+
+                <div class="form-floating mb-3">
+                    <input name="OldPassword" type="password" class="form-control" placeholder="Current Password" required />
+                    <label for="OldPassword">Current Password</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input name="NewPassword" type="password" class="form-control" placeholder="New Password" required />
+                    <label for="NewPassword">New Password</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input name="ConfirmPassword" type="password" class="form-control" placeholder="Confirm New Password" required />
+                    <label for="ConfirmPassword">Confirm New Password</label>
+                </div>
+
+                <button type="submit" class="btn btn-outline-primary w-100 py-2">Update Password</button>
+            </form>
+
+            <hr class="my-4" />
+
+            <form asp-action="DeleteAccount" method="post" class="mt-4" onsubmit="return confirm('Are you sure you want to delete your account? This cannot be undone.');">
+                <button type="submit" class="btn btn-outline-danger w-100 py-2">Delete Account</button>
+            </form>
+        </div>
+    </div>
+</div>

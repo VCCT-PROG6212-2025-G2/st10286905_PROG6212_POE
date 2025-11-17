@@ -2,146 +2,138 @@
 
 using ContractMonthlyClaimSystem.Controllers;
 using ContractMonthlyClaimSystem.Models;
+using ContractMonthlyClaimSystem.Models.Auth;
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ContractMonthlyClaimSystem.Tests.Controllers
 {
-    /// <summary>
-    /// Unit tests for the ManageRolesController class.
-    /// Each test validates correct controller logic, service interaction,
-    /// and expected MVC outcomes (views, redirects, or not-found results).
-    /// </summary>
     public class ManageRolesControllerTests
     {
         private readonly Mock<IRoleService> _roleServiceMock;
-        private readonly Mock<UserManager<AppUser>> _userManagerMock;
+        private readonly Mock<IUserService> _userServiceMock;
         private readonly ManageRolesController _controller;
 
         public ManageRolesControllerTests()
         {
-            // Mock role and user services for isolation.
             _roleServiceMock = new Mock<IRoleService>();
+            _userServiceMock = new Mock<IUserService>();
 
-            var store = new Mock<IUserStore<AppUser>>();
-            _userManagerMock = new Mock<UserManager<AppUser>>(
-                store.Object, null, null, null, null, null, null, null, null
-            );
-
-            // Instantiate controller with mocks.
             _controller = new ManageRolesController(
                 _roleServiceMock.Object,
-                _userManagerMock.Object
+                _userServiceMock.Object
             );
         }
 
+        // ---------------------------------------------------------
+        // INDEX
+        // ---------------------------------------------------------
         [Fact]
         public async Task Index_ReturnsViewWithUserRoles()
         {
-            // Arrange: prepare users and roles.
-            var user1 = new AppUser { Id = "U1", UserName = "user1@cmcs.app" };
-            var user2 = new AppUser { Id = "U2", UserName = "user2@cmcs.app" };
-
             var usersWithRoles = new List<(AppUser User, IList<string> Roles)>
             {
-                (user1, new List<string> { "Lecturer" }),
-                (user2, new List<string> { "Admin" })
+                (new AppUser { Id = 1, UserName = "user1@cmcs.app" }, new List<string> { "Lecturer" }),
+                (new AppUser { Id = 2, UserName = "user2@cmcs.app" }, new List<string> { "Admin" })
             };
-            var allRoles = new List<IdentityRole>
+
+            var allRoles = new List<AppRole>
             {
-                new() { Name = "Admin" },
-                new() { Name = "Lecturer" }
+                new() { Id = 1, Name = "Admin" },
+                new() { Id = 2, Name = "Lecturer" }
             };
 
             _roleServiceMock.Setup(s => s.GetUsersWithRolesAsync()).ReturnsAsync(usersWithRoles);
             _roleServiceMock.Setup(s => s.GetRolesAsync()).ReturnsAsync(allRoles);
 
-            // Act
             var result = await _controller.Index() as ViewResult;
 
-            // Assert: verify returned model and viewbag content.
             Assert.NotNull(result);
+
             var model = Assert.IsType<List<UserRolesViewModel>>(result.Model);
             Assert.Equal(2, model.Count);
             Assert.Equal(allRoles, result.ViewData["AllRoles"]);
         }
 
+        // ---------------------------------------------------------
+        // MANAGE (GET)
+        // ---------------------------------------------------------
         [Fact]
-        public async Task Manage_Get_ReturnsViewWithUserRoles_WhenUserExists()
+        public async Task Manage_Get_ReturnsView_WhenUserExists()
         {
-            // Arrange
-            var user = new AppUser { Id = "U1", UserName = "testuser" };
-            var roles = new List<IdentityRole>
+            var user = new AppUser { Id = 10, UserName = "testuser" };
+
+            var allRoles = new List<AppRole>
             {
-                new() { Name = "Admin" },
-                new() { Name = "Lecturer" }
+                new() { Id = 1, Name = "Admin" },
+                new() { Id = 2, Name = "Lecturer" }
             };
 
-            _userManagerMock.Setup(u => u.FindByIdAsync("U1")).ReturnsAsync(user);
-            _userManagerMock.Setup(u => u.IsInRoleAsync(user, "Admin")).ReturnsAsync(true);
-            _userManagerMock.Setup(u => u.IsInRoleAsync(user, "Lecturer")).ReturnsAsync(false);
-            _roleServiceMock.Setup(r => r.GetRolesAsync()).ReturnsAsync(roles);
+            _userServiceMock.Setup(s => s.GetUserAsync(10)).ReturnsAsync(user);
+            _roleServiceMock.Setup(s => s.GetRolesAsync()).ReturnsAsync(allRoles);
 
-            // Act
-            var result = await _controller.Manage("U1") as ViewResult;
+            _userServiceMock.Setup(s => s.IsUserInRoleAsync(10, "Admin")).ReturnsAsync(true);
+            _userServiceMock.Setup(s => s.IsUserInRoleAsync(10, "Lecturer")).ReturnsAsync(false);
 
-            // Assert
+            var result = await _controller.Manage(10) as ViewResult;
+
             Assert.NotNull(result);
+
             var model = Assert.IsType<ManageUserRolesViewModel>(result.Model);
+            Assert.Equal(10, model.UserId);
             Assert.Equal("testuser", model.UserName);
             Assert.Equal(2, model.Roles.Count);
+
             Assert.True(model.Roles.First(r => r.RoleName == "Admin").Selected);
+            Assert.False(model.Roles.First(r => r.RoleName == "Lecturer").Selected);
         }
 
         [Fact]
         public async Task Manage_Get_ReturnsNotFound_WhenUserMissing()
         {
-            // Arrange: mock null result.
-            _userManagerMock.Setup(u => u.FindByIdAsync("404")).ReturnsAsync((AppUser?)null);
+            _userServiceMock.Setup(s => s.GetUserAsync(999)).ReturnsAsync((AppUser?)null);
 
-            // Act
-            var result = await _controller.Manage("404");
+            var result = await _controller.Manage(999);
 
-            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
 
+        // ---------------------------------------------------------
+        // MANAGE (POST)
+        // ---------------------------------------------------------
         [Fact]
-        public async Task Manage_Post_UpdatesUserRolesAndRedirects()
+        public async Task Manage_Post_UpdatesRoles_AndRedirects()
         {
-            // Arrange
             var model = new ManageUserRolesViewModel
             {
-                UserId = "U1",
-                Roles = new List<RoleSelectionViewModel>
-                {
-                    new() { RoleName = "Lecturer", Selected = true },
-                    new() { RoleName = "Admin", Selected = false }
-                }
+                UserId = 10,
+                Roles =
+                [
+                    new RoleSelectionViewModel { RoleName = "Admin", Selected = false },
+                    new RoleSelectionViewModel { RoleName = "Lecturer", Selected = true }
+                ]
             };
-            var user = new AppUser { Id = "U1", UserName = "user" };
 
-            _userManagerMock.Setup(u => u.FindByIdAsync("U1")).ReturnsAsync(user);
+            var user = new AppUser { Id = 10, UserName = "user" };
+
+            _userServiceMock.Setup(s => s.GetUserAsync(10)).ReturnsAsync(user);
+
             _roleServiceMock
-                .Setup(s => s.UpdateUserRolesAsync("U1", It.IsAny<IEnumerable<string>>()))
+                .Setup(s => s.UpdateUserRolesAsync(10, It.IsAny<IEnumerable<string>>()))
                 .Returns(Task.CompletedTask);
 
-            // Act
             var result = await _controller.Manage(model) as RedirectToActionResult;
 
-            // Assert: redirected back to Index and roles updated.
             Assert.NotNull(result);
             Assert.Equal(nameof(ManageRolesController.Index), result.ActionName);
+
             _roleServiceMock.Verify(
-                s => s.UpdateUserRolesAsync("U1", It.Is<IEnumerable<string>>(r => r.Contains("Lecturer"))),
+                s => s.UpdateUserRolesAsync(
+                    10,
+                    It.Is<IEnumerable<string>>(roles => roles.Contains("Lecturer") && !roles.Contains("Admin"))
+                ),
                 Times.Once
             );
         }
@@ -149,57 +141,56 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task Manage_Post_ReturnsNotFound_WhenUserMissing()
         {
-            // Arrange
-            var model = new ManageUserRolesViewModel { UserId = "404" };
-            _userManagerMock.Setup(u => u.FindByIdAsync("404")).ReturnsAsync((AppUser?)null);
+            var model = new ManageUserRolesViewModel { UserId = 404 };
 
-            // Act
+            _userServiceMock.Setup(s => s.GetUserAsync(404)).ReturnsAsync((AppUser?)null);
+
             var result = await _controller.Manage(model);
 
-            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
 
+        // ---------------------------------------------------------
+        // ADD ROLE
+        // ---------------------------------------------------------
         [Fact]
-        public async Task AddRole_CreatesRoleAndRedirects()
+        public async Task AddRole_CreatesRole_AndRedirects()
         {
-            // Arrange
-            _roleServiceMock.Setup(r => r.CreateRoleAsync("Lecturer")).Returns(Task.CompletedTask);
+            _roleServiceMock.Setup(s => s.CreateRoleAsync("Lecturer")).Returns(Task.CompletedTask);
 
-            // Act
             var result = await _controller.AddRole("Lecturer") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(ManageRolesController.Index), result.ActionName);
-            _roleServiceMock.Verify(r => r.CreateRoleAsync("Lecturer"), Times.Once);
+
+            _roleServiceMock.Verify(s => s.CreateRoleAsync("Lecturer"), Times.Once);
         }
 
         [Fact]
-        public async Task AddRole_DoesNotCreate_WhenNameIsEmpty()
+        public async Task AddRole_DoesNothing_WhenNameIsEmpty()
         {
-            // Act
             var result = await _controller.AddRole("") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(ManageRolesController.Index), result.ActionName);
-            _roleServiceMock.Verify(r => r.CreateRoleAsync(It.IsAny<string>()), Times.Never);
+
+            _roleServiceMock.Verify(s => s.CreateRoleAsync(It.IsAny<string>()), Times.Never);
         }
 
+        // ---------------------------------------------------------
+        // DELETE ROLE
+        // ---------------------------------------------------------
         [Fact]
-        public async Task DeleteRole_DeletesRoleAndRedirects()
+        public async Task DeleteRole_DeletesRole_AndRedirects()
         {
-            // Arrange
-            _roleServiceMock.Setup(r => r.DeleteRoleAsync("Lecturer")).Returns(Task.CompletedTask);
+            _roleServiceMock.Setup(s => s.DeleteRoleAsync("Lecturer")).Returns(Task.CompletedTask);
 
-            // Act
             var result = await _controller.DeleteRole("Lecturer") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(ManageRolesController.Index), result.ActionName);
-            _roleServiceMock.Verify(r => r.DeleteRoleAsync("Lecturer"), Times.Once);
+
+            _roleServiceMock.Verify(s => s.DeleteRoleAsync("Lecturer"), Times.Once);
         }
     }
 }

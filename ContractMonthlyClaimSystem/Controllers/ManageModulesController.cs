@@ -4,7 +4,6 @@ using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,17 +11,17 @@ namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Admin,ProgramCoordinator")]
     public class ManageModulesController(
-        UserManager<AppUser> userManager,
+        IUserService userService,
         IModuleService moduleService
     ) : Controller
     {
-        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly IUserService _userService = userService;
         private readonly IModuleService _moduleService = moduleService;
 
         // Show lecturers and all modules
         public async Task<IActionResult> Index()
         {
-            var lecturers = await _userManager.GetUsersInRoleAsync("Lecturer");
+            var lecturers = await _userService.GetUsersInRoleAsync("Lecturer");
 
             var lecturerVMs = new List<LecturerViewModel>();
             foreach (var lecturer in lecturers)
@@ -31,7 +30,7 @@ namespace ContractMonthlyClaimSystem.Controllers
                     new LecturerViewModel
                     {
                         Id = lecturer.Id,
-                        Name = lecturer.UserName!,
+                        Name = $"{lecturer.FirstName} {lecturer.LastName}",
                         Modules = await _moduleService.GetModulesForLecturerAsync(lecturer.Id),
                     }
                 );
@@ -64,9 +63,9 @@ namespace ContractMonthlyClaimSystem.Controllers
         }
 
         // Show all modules for a specific lecturer
-        public async Task<IActionResult> ManageLecturerModules(string id)
+        public async Task<IActionResult> ManageLecturerModules(int id)
         {
-            var lecturer = await _userManager.FindByIdAsync(id);
+            var lecturer = await _userService.GetUserAsync(id);
             if (lecturer == null)
                 return NotFound();
 
@@ -76,9 +75,9 @@ namespace ContractMonthlyClaimSystem.Controllers
             var viewModel = new ManageLecturerModulesViewModel
             {
                 LecturerId = id,
-                LecturerName = lecturer.UserName!,
+                LecturerName = $"{lecturer.FirstName} {lecturer.LastName}",
                 AllModules = allModules,
-                AssignedModuleIds = assignedModules.Select(m => m.Id).ToList(),
+                AssignedModuleIds = [.. assignedModules.Select(m => m.Id)],
             };
 
             return View(viewModel);
@@ -86,7 +85,7 @@ namespace ContractMonthlyClaimSystem.Controllers
 
         // Assign a module
         [HttpPost]
-        public async Task<IActionResult> AddLecturerModule(string lecturerId, int moduleId)
+        public async Task<IActionResult> AddLecturerModule(int lecturerId, int moduleId)
         {
             await _moduleService.AddLecturerModuleAsync(lecturerId, moduleId);
             return RedirectToAction(nameof(ManageLecturerModules), new { id = lecturerId });
@@ -94,7 +93,7 @@ namespace ContractMonthlyClaimSystem.Controllers
 
         // Remove a module
         [HttpPost]
-        public async Task<IActionResult> RemoveLecturerModule(string lecturerId, int moduleId)
+        public async Task<IActionResult> RemoveLecturerModule(int lecturerId, int moduleId)
         {
             await _moduleService.RemoveLecturerModuleAsync(lecturerId, moduleId);
             return RedirectToAction(nameof(ManageLecturerModules), new { id = lecturerId });

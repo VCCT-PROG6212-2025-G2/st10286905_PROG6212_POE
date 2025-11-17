@@ -7,10 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models;
+using ContractMonthlyClaimSystem.Models.Auth;
 using ContractMonthlyClaimSystem.Services;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -24,19 +24,19 @@ namespace ContractMonthlyClaimSystem.Tests.Services
     /// </summary>
     public class ReviewerClaimServiceTests
     {
-        private readonly ApplicationDbContext _context;
+        private readonly AppDbContext _context;
         private readonly Mock<IWebHostEnvironment> _envMock;
         private readonly Mock<IFileEncryptionService> _encryptionMock;
-        private readonly Mock<UserManager<AppUser>> _userManagerMock;
+        private readonly Mock<IUserService> _userServiceMock;
         private readonly ReviewerClaimService _service;
 
         public ReviewerClaimServiceTests()
         {
             // Create an in-memory EF Core database to isolate each test run.
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            _context = new ApplicationDbContext(options);
+            _context = new AppDbContext(options);
 
             // Mock the hosting environment to simulate the web root path for uploads.
             _envMock = new Mock<IWebHostEnvironment>();
@@ -46,24 +46,13 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             _encryptionMock = new Mock<IFileEncryptionService>();
 
             // Mock UserManager<AppUser> to simulate role checks and identity lookups.
-            var userStore = new Mock<IUserStore<AppUser>>();
-            _userManagerMock = new Mock<UserManager<AppUser>>(
-                userStore.Object,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            );
+            _userServiceMock = new Mock<IUserService>();
 
             // Instantiate the service under test, injecting the mocks and context.
             _service = new ReviewerClaimService(
                 _context,
                 _envMock.Object,
-                _userManagerMock.Object,
+                _userServiceMock.Object,
                 _encryptionMock.Object
             );
         }
@@ -73,7 +62,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         {
             // Arrange: add multiple claims with related modules and lecturer users.
             var module = new Module { Name = "Programming 2B", Code = "PROG6212" };
-            var lecturer = new AppUser { Id = "L1", UserName = "lecturer@iie.ac.za" };
+            var lecturer = new AppUser { Id = 1, UserName = "lecturer@iie.ac.za" };
             _context.Modules.Add(module);
             _context.Users.Add(lecturer);
             _context.ContractClaims.Add(
@@ -94,7 +83,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task GetClaimAsync_ReturnsSpecificClaim()
         {
             // Arrange: create and save a claim with related module and lecturer.
-            var lecturer = new AppUser { UserName = "lecturer@cmcs.app" };
+            var lecturer = new AppUser { UserName = "lecturer" };
             _context.Users.Add(lecturer);
             var module = new Module { Name = "Programming 2B", Code = "PROG6212" };
             _context.Modules.Add(module);
@@ -114,7 +103,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task GetClaimFilesAsync_ReturnsLinkedFiles()
         {
             // Arrange: create a claim and an uploaded file linked via a join table.
-            var claim = new ContractClaim { Id = 1, LecturerUserId = "L1" };
+            var claim = new ContractClaim { Id = 1, LecturerUserId = 1 };
             var file = new UploadedFile
             {
                 Id = 1,
@@ -144,12 +133,12 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task ReviewClaim_ReturnsFalse_WhenUserNotFound()
         {
             // Arrange: configure the mock UserManager to return null for any user lookup.
-            _userManagerMock
-                .Setup(u => u.FindByIdAsync(It.IsAny<string>()))
+            _userServiceMock
+                .Setup(u => u.GetUserAsync(It.IsAny<string>()))
                 .ReturnsAsync((AppUser?)null);
 
             // Act: try to review a claim with a non-existent user.
-            var result = await _service.ReviewClaim(1, "invalid", true, "ok");
+            var result = await _service.ReviewClaim(1, -1, true, "ok");
 
             // Assert: should return false since the reviewer user cannot be found.
             Assert.False(result);
@@ -159,11 +148,19 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task ReviewClaim_ReturnsFalse_WhenUserHasNoValidRole()
         {
             // Arrange: mock a user with a non-reviewer role.
-            var user = new AppUser { Id = "U1" };
-            _userManagerMock.Setup(u => u.FindByIdAsync("U1")).ReturnsAsync(user);
-            _userManagerMock
-                .Setup(u => u.GetRolesAsync(user))
-                .ReturnsAsync(new List<string> { "Lecturer" });
+            var user = new AppUser
+            {
+                Id = 1,
+                UserRoles =
+                [
+                    new AppUserRole
+                    {
+                        UserId = 1,
+                        Role = new AppRole { Name = "Lecturer" },
+                    },
+                ],
+            };
+            _userServiceMock.Setup(u => u.GetUserAsync(1)).ReturnsAsync(user);
 
             // Add a valid claim to the database.
             var lecturer = new AppUser { UserName = "lecturer@cmcs.app" };
@@ -175,7 +172,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             await _context.SaveChangesAsync();
 
             // Act: attempt to review the claim with an invalid reviewer role.
-            var result = await _service.ReviewClaim(claim.Id, "U1", true, "no");
+            var result = await _service.ReviewClaim(claim.Id, 1, true, "no");
 
             // Assert: should return false because role is not ProgramCoordinator/AcademicManager.
             Assert.False(result);
@@ -185,8 +182,18 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task ReviewClaim_UpdatesClaim_ForProgramCoordinatorAcceptance()
         {
             // Arrange: set up a ProgramCoordinator user and a claim.
-            var user = new AppUser { Id = "U1" };
-            _context.Users.Add(user);
+            var user = new AppUser
+            {
+                Id = 1,
+                UserRoles =
+                [
+                    new AppUserRole
+                    {
+                        UserId = 1,
+                        Role = new AppRole { Name = "ProgramCoordinator" },
+                    },
+                ],
+            };
             var lecturer = new AppUser { UserName = "lecturer@cmcs.app" };
             _context.Users.Add(lecturer);
             var module = new Module { Name = "Programming 2B", Code = "PROG6212" };
@@ -201,13 +208,10 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             await _context.SaveChangesAsync();
 
             // Mock the user's role and retrieval behavior.
-            _userManagerMock.Setup(u => u.FindByIdAsync("U1")).ReturnsAsync(user);
-            _userManagerMock
-                .Setup(u => u.GetRolesAsync(user))
-                .ReturnsAsync(new List<string> { "ProgramCoordinator" });
+            _userServiceMock.Setup(u => u.GetUserAsync(1)).ReturnsAsync(user);
 
             // Act: review the claim as accepted by the Program Coordinator.
-            var result = await _service.ReviewClaim(1, "U1", true, "Looks good");
+            var result = await _service.ReviewClaim(1, 1, true, "Looks good");
 
             // Assert: verify that the claim status was updated correctly.
             Assert.True(result);
@@ -220,7 +224,18 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         public async Task ReviewClaim_UpdatesClaim_ForAcademicManagerRejection()
         {
             // Arrange: create an AcademicManager user and claim to review.
-            var user = new AppUser { Id = "U2" };
+            var user = new AppUser
+            {
+                Id = 2,
+                UserRoles =
+                [
+                    new AppUserRole
+                    {
+                        UserId = 1,
+                        Role = new AppRole { Name = "AcademicManager" },
+                    },
+                ],
+            };
             _context.Users.Add(user);
             var lecturer = new AppUser { UserName = "lecturer@cmcs.app" };
             _context.Users.Add(lecturer);
@@ -236,13 +251,10 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             await _context.SaveChangesAsync();
 
             // Mock the user's role and lookup behavior.
-            _userManagerMock.Setup(u => u.FindByIdAsync("U2")).ReturnsAsync(user);
-            _userManagerMock
-                .Setup(u => u.GetRolesAsync(user))
-                .ReturnsAsync(new List<string> { "AcademicManager" });
-
+            _userServiceMock.Setup(u => u.GetUserAsync(2)).ReturnsAsync(user);
+            
             // Act: review the claim as rejected by the Academic Manager.
-            var result = await _service.ReviewClaim(2, "U2", false, "Incorrect hours");
+            var result = await _service.ReviewClaim(2, 2, false, "Incorrect hours");
 
             // Assert: confirm claim was updated and rejection recorded.
             Assert.True(result);
@@ -258,35 +270,38 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             var file = new UploadedFile
             {
                 Id = 1,
-                FileName = "data.txt",
-                FilePath = Path.Combine("uploads", "data.txt"),
+                FileName = "reviewer_test_data.txt",
+                FilePath = Path.Combine("uploads", "reviewer_test_data.txt"),
             };
             _context.UploadedFiles.Add(file);
             await _context.SaveChangesAsync();
 
-            // Create the file physically under a temp directory.
+            // Create the physical file
             var fullPath = Path.Combine(_envMock.Object.WebRootPath, file.FilePath);
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
             await File.WriteAllBytesAsync(fullPath, new byte[] { 1, 2, 3 });
 
-            // Mock decryption to avoid any actual cryptography work.
+            // Mock decryption
             _encryptionMock
                 .Setup(e => e.DecryptToStreamAsync(fullPath, It.IsAny<MemoryStream>()))
                 .Returns(Task.CompletedTask);
 
-            // Act: retrieve and decrypt the file using the service.
+            // Act
             var result = await _service.GetFileAsync(1);
 
-            // Cleanup: remove the uploads directory created for this test.
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("reviewer_test_data.txt", result?.FileName);
+            Assert.Equal("application/octet-stream", result?.ContentType);
+
+            // IMPORTANT: dispose MemoryStream so file unlocks
+            result?.FileStream?.Dispose();
+
             var uploadRoot = Path.Combine(_envMock.Object.WebRootPath, "uploads");
             if (Directory.Exists(uploadRoot))
                 Directory.Delete(uploadRoot, true);
-
-            // Assert: verify that file metadata is correctly returned.
-            Assert.NotNull(result);
-            Assert.Equal("data.txt", result?.FileName);
-            Assert.Equal("application/octet-stream", result?.ContentType);
         }
+
 
         [Fact]
         public async Task GetFileAsync_ReturnsNull_WhenFileNotFound()

@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ContractMonthlyClaimSystem.Services
 {
-    public class ModuleService(ApplicationDbContext context) : IModuleService
+    public class ModuleService(AppDbContext context) : IModuleService
     {
-        private readonly ApplicationDbContext _context = context;
+        private readonly AppDbContext _context = context;
 
         public async Task<List<Module>> GetModulesAsync() => await _context.Modules.ToListAsync();
 
-        public async Task<List<Module>> GetModulesForLecturerAsync(string lecturerId) =>
+        public async Task<List<Module>> GetModulesForLecturerAsync(int lecturerId) =>
             await (
                 from lm in _context.LecturerModules
                 where lm.LecturerUserId == lecturerId
@@ -40,7 +40,7 @@ namespace ContractMonthlyClaimSystem.Services
             }
         }
 
-        public async Task AddLecturerModuleAsync(string lecturerId, int moduleId)
+        public async Task AddLecturerModuleAsync(int lecturerId, int moduleId)
         {
             var lecturerModule = new LecturerModule
             {
@@ -54,7 +54,7 @@ namespace ContractMonthlyClaimSystem.Services
             }
         }
 
-        public async Task RemoveLecturerModuleAsync(string lecturerId, int moduleId)
+        public async Task RemoveLecturerModuleAsync(int lecturerId, int moduleId)
         {
             var lecturerModule = await _context.LecturerModules.FirstOrDefaultAsync(lm =>
                 lm.LecturerUserId == lecturerId && lm.ModuleId == moduleId

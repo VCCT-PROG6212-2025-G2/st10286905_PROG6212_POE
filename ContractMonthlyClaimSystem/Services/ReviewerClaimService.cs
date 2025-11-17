@@ -7,15 +7,15 @@ using Microsoft.EntityFrameworkCore;
 namespace ContractMonthlyClaimSystem.Services
 {
     public class ReviewerClaimService(
-        ApplicationDbContext context,
+        AppDbContext context,
         IWebHostEnvironment env,
-        UserManager<AppUser> userManager,
+        IUserService userService,
         IFileEncryptionService encryptionService
     ) : IReviewerClaimService
     {
-        private readonly ApplicationDbContext _context = context;
+        private readonly AppDbContext _context = context;
         private readonly IWebHostEnvironment _env = env;
-        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly IUserService _userService = userService;
         private readonly IFileEncryptionService _encryptionService = encryptionService;
 
         public async Task<List<ContractClaim>> GetClaimsAsync() =>
@@ -44,15 +44,15 @@ namespace ContractMonthlyClaimSystem.Services
 
         public async Task<bool> ReviewClaim(
             int claimId,
-            string userId,
+            int userId,
             bool accept,
             string? comment
         )
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userService.GetUserAsync(userId);
             if (user == null)
                 return false; // Invalid user
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = user.UserRoles.Select(ur=>ur.Role.Name).ToList();
             if (!roles.Contains("ProgramCoordinator") && !roles.Contains("AcademicManager"))
                 return false; // User must be either a ProgramCoordinator or AcademicManager to review claims.
 

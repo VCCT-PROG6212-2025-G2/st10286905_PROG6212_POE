@@ -1,63 +1,71 @@
-﻿using ContractMonthlyClaimSystem.Models;
+﻿using ContractMonthlyClaimSystem.Data;
+using ContractMonthlyClaimSystem.Models.Auth;
 using ContractMonthlyClaimSystem.Services.Interfaces;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContractMonthlyClaimSystem.Services
 {
-    public class RoleService(
-        UserManager<AppUser> userManager,
-        RoleManager<IdentityRole> roleManager
-    ) : IRoleService
+    public class RoleService(AppDbContext context, IUserService userService) : IRoleService
     {
-        private readonly UserManager<AppUser> _userManager = userManager;
-        private readonly RoleManager<IdentityRole> _roleManager = roleManager;
+        private readonly AppDbContext _context = context;
+        private readonly IUserService _userService = userService;
 
         public async Task<List<(AppUser User, IList<string> Roles)>> GetUsersWithRolesAsync()
         {
             var results = new List<(AppUser User, IList<string> Roles)>();
-            
-            var users = await _userManager.Users.ToListAsync();
+
+            var users = await _context
+                .Users.Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .ToListAsync();
             foreach (var user in users)
-                results.Add((user, await _userManager.GetRolesAsync(user)));
+                results.Add((user, user.UserRoles.Select(ur => ur.Role.Name).ToList()));
 
             return results;
         }
 
-        public async Task<List<IdentityRole>> GetRolesAsync() =>
-            await _roleManager.Roles.ToListAsync();
+        public async Task<List<AppRole>> GetRolesAsync() => await _context.Roles.ToListAsync();
 
         public async Task CreateRoleAsync(string roleName)
         {
             if (string.IsNullOrWhiteSpace(roleName))
                 throw new ArgumentNullException($"{nameof(roleName)} cannot be empty");
 
-            if (!await _roleManager.RoleExistsAsync(roleName))
-                await _roleManager.CreateAsync(new IdentityRole(roleName));
+            if (!await _context.Roles.AnyAsync(r => r.Name == roleName))
+            {
+                _context.Roles.Add(new AppRole { Name = roleName });
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task DeleteRoleAsync(string roleName)
         {
-            var role = await _roleManager.FindByNameAsync(roleName);
+            var role = await _context.Roles.Where(r => r.Name == roleName).FirstOrDefaultAsync();
             if (role != null)
-                await _roleManager.DeleteAsync(role);
+            {
+                _context.Roles.Remove(role);
+                await _context.SaveChangesAsync();
+            }
         }
 
-        public async Task UpdateUserRolesAsync(string userId, IEnumerable<string> selectedRoles)
+        public async Task UpdateUserRolesAsync(int userId, IEnumerable<string> selectedRoles)
         {
             var user =
-                await _userManager.FindByIdAsync(userId)
+                await _context
+                .Users.Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .SingleOrDefaultAsync(u => u.Id == userId)
                 ?? throw new InvalidOperationException($"No user found with ID: {userId}");
 
-            var currentRoles = await _userManager.GetRolesAsync(user);
+            var currentRoles = user.UserRoles.Select(ur=>ur.Role.Name).ToList();
             var toAdd = selectedRoles.Except(currentRoles);
             var toRemove = currentRoles.Except(selectedRoles);
 
-            if(toAdd.Any())
-                await _userManager.AddToRolesAsync(user, toAdd);
+            if (toAdd.Any())
+                await _userService.AddUserToRolesAsync(userId, toAdd);
 
-            if(toRemove.Any())
-                await _userManager.RemoveFromRolesAsync(user, toRemove);
+            if (toRemove.Any())
+                await _userService.RemoveUserFromRolesAsync(userId, toRemove);
         }
     }
 }

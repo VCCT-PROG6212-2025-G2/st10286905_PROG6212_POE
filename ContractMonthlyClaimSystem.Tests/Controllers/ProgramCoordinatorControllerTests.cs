@@ -1,79 +1,67 @@
 ﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f5452c-2788-800b-bbbc-175029690cfd
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 using ContractMonthlyClaimSystem.Controllers;
 using ContractMonthlyClaimSystem.Models;
+using ContractMonthlyClaimSystem.Models.Auth;
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
 namespace ContractMonthlyClaimSystem.Tests.Controllers
 {
-    /// <summary>
-    /// Unit tests for the ProgramCoordinatorController class.
-    /// These tests verify all main controller actions — Index, ClaimDetails,
-    /// AcceptClaim, RejectClaim, and DownloadFile — ensuring correct logic,
-    /// proper interactions with services, and appropriate return results.
-    /// </summary>
     public class ProgramCoordinatorControllerTests
     {
         private readonly Mock<IReviewerClaimService> _reviewerClaimServiceMock;
-        private readonly Mock<UserManager<AppUser>> _userManagerMock;
+        private readonly Mock<IUserService> _userServiceMock;
         private readonly ProgramCoordinatorController _controller;
 
         public ProgramCoordinatorControllerTests()
         {
-            // Mock IReviewerClaimService dependency to avoid real database calls.
             _reviewerClaimServiceMock = new Mock<IReviewerClaimService>();
+            _userServiceMock = new Mock<IUserService>();
 
-            // Mock UserManager (requires a dummy IUserStore).
-            var store = new Mock<IUserStore<AppUser>>();
-            _userManagerMock = new Mock<UserManager<AppUser>>(
-                store.Object,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            );
-
-            // Create controller with mocked dependencies.
             _controller = new ProgramCoordinatorController(
                 _reviewerClaimServiceMock.Object,
-                _userManagerMock.Object
+                _userServiceMock.Object
             );
 
-            // Simulate a logged-in Program Coordinator.
+            // Simulate logged-in Program Coordinator
             var user = new ClaimsPrincipal(
-                new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "U1") }, "mock")
+                new ClaimsIdentity(
+                    new[] { new Claim(ClaimTypes.Name, "coordinator@cmcs.app") },
+                    "mock"
+                )
             );
+
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext { User = user },
             };
 
-            // Default user manager behavior for current user.
-            _userManagerMock
-                .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-                .ReturnsAsync(new AppUser { Id = "U1", UserName = "coordinator@cmcs.app" });
+            // Default "logged-in" user
+            _userServiceMock
+                .Setup(s => s.GetUserAsync("coordinator@cmcs.app"))
+                .ReturnsAsync(
+                    new AppUser
+                    {
+                        Id = 10,
+                        FirstName = "Prog",
+                        LastName = "Coord",
+                    }
+                );
         }
 
+        // ---------------------------------------------------------
+        // INDEX
+        // ---------------------------------------------------------
         [Fact]
         public async Task Index_ReturnsViewWithReviewerClaimsViewModel()
         {
-            // Arrange: prepare sample claims with varying states.
-            var lecturer = new AppUser { Id = "L1", UserName = "lecturer@cmcs.app" };
+            var lecturer = new AppUser { FirstName = "John", LastName = "Doe" };
             var module = new Module { Name = "Programming 2B" };
 
             var claims = new List<ContractClaim>
@@ -96,7 +84,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                     HoursWorked = 8,
                     HourlyRate = 200,
                     ClaimStatus = ClaimStatus.PENDING_CONFIRM,
-                    ProgramCoordinatorUserId = "U1",
+                    ProgramCoordinatorUserId = 10,
                 },
                 new()
                 {
@@ -111,140 +99,142 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
 
             _reviewerClaimServiceMock.Setup(s => s.GetClaimsAsync()).ReturnsAsync(claims);
 
-            // Act
             var result = await _controller.Index() as ViewResult;
 
-            // Assert: verify correct view model population.
             Assert.NotNull(result);
-            var model = Assert.IsType<ReviewerClaimsViewModel>(result.Model);
-            Assert.Single(model.PendingClaims);
-            Assert.Single(model.PendingConfirmClaims);
-            Assert.Single(model.CompletedClaims);
+
+            var vm = Assert.IsType<ReviewerClaimsViewModel>(result.Model);
+            Assert.Single(vm.PendingClaims);
+            Assert.Single(vm.PendingConfirmClaims);
+            Assert.Single(vm.CompletedClaims);
         }
 
+        // ---------------------------------------------------------
+        // CLAIM DETAILS
+        // ---------------------------------------------------------
         [Fact]
         public async Task ClaimDetails_ReturnsViewWithDetails_WhenClaimExists()
         {
-            // Arrange: create claim with linked lecturer, module, and files.
-            var lecturer = new AppUser { UserName = "lecturer@cmcs.app" };
+            var lecturer = new AppUser { FirstName = "Alice", LastName = "Green" };
             var module = new Module { Name = "Networking 3A" };
+            var files = new List<UploadedFile> { new() { FileName = "proof.pdf" } };
+
             var claim = new ContractClaim
             {
-                Id = 5,
+                Id = 99,
                 LecturerUser = lecturer,
                 Module = module,
                 HoursWorked = 10,
                 HourlyRate = 200,
-                LecturerComment = "Completed work",
+                LecturerComment = "Completed",
+                ProgramCoordinatorUser = new AppUser { FirstName = "Prog", LastName = "Coord" },
+                AcademicManagerUser = new AppUser { FirstName = "Admin", LastName = "Manager" },
                 ClaimStatus = ClaimStatus.PENDING_CONFIRM,
             };
-            var files = new List<UploadedFile> { new() { FileName = "proof.pdf" } };
 
-            _reviewerClaimServiceMock.Setup(s => s.GetClaimAsync(5)).ReturnsAsync(claim);
+            _reviewerClaimServiceMock.Setup(s => s.GetClaimAsync(99)).ReturnsAsync(claim);
             _reviewerClaimServiceMock.Setup(s => s.GetClaimFilesAsync(claim)).ReturnsAsync(files);
 
-            // Act
-            var result = await _controller.ClaimDetails(5) as ViewResult;
+            var result = await _controller.ClaimDetails(99) as ViewResult;
 
-            // Assert: ensure correct view and model data.
             Assert.NotNull(result);
-            var model = Assert.IsType<ReviewerClaimDetailsViewModel>(result.Model);
-            Assert.Equal("proof.pdf", model.Files.First().FileName);
-            Assert.Equal("Networking 3A", model.ModuleName);
+
+            var vm = Assert.IsType<ReviewerClaimDetailsViewModel>(result.Model);
+            Assert.Equal("proof.pdf", vm.Files.First().FileName);
+            Assert.Equal("Networking 3A", vm.ModuleName);
+            Assert.Equal("Alice Green", vm.LecturerName);
         }
 
         [Fact]
-        public async Task ClaimDetails_ReturnsNotFound_WhenClaimMissing()
+        public async Task ClaimDetails_ReturnsNotFound_WhenClaimDoesNotExist()
         {
-            // Arrange
             _reviewerClaimServiceMock
                 .Setup(s => s.GetClaimAsync(404))
                 .ReturnsAsync((ContractClaim?)null);
 
-            // Act
             var result = await _controller.ClaimDetails(404);
 
-            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
 
+        // ---------------------------------------------------------
+        // ACCEPT CLAIM
+        // ---------------------------------------------------------
         [Fact]
-        public async Task AcceptClaim_RedirectsToIndex_WhenValid()
+        public async Task AcceptClaim_Redirects_WhenValid()
         {
-            // Arrange: valid review
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(10, "U1", true, "approved"))
+                .Setup(s => s.ReviewClaim(10, 10, true, "ok"))
                 .ReturnsAsync(true);
 
-            // Act
-            var result = await _controller.AcceptClaim(10, "approved") as RedirectToActionResult;
+            var result = await _controller.AcceptClaim(10, "ok") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(ProgramCoordinatorController.Index), result.ActionName);
         }
 
         [Fact]
-        public async Task AcceptClaim_RedirectsToIndex_WhenInvalid()
+        public async Task AcceptClaim_Redirects_WhenInvalid()
         {
-            // Arrange: invalid claim
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(99, "U1", true, "invalid"))
+                .Setup(s => s.ReviewClaim(88, 10, true, "bad"))
                 .ReturnsAsync(false);
 
-            // Act
-            var result = await _controller.AcceptClaim(99, "invalid") as RedirectToActionResult;
+            var result = await _controller.AcceptClaim(88, "bad") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(ProgramCoordinatorController.Index), result.ActionName);
         }
 
+        // ---------------------------------------------------------
+        // REJECT CLAIM
+        // ---------------------------------------------------------
         [Fact]
-        public async Task RejectClaim_RedirectsToIndex_WhenValid()
+        public async Task RejectClaim_Redirects_WhenValid()
         {
-            // Arrange
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(12, "U1", false, "reject"))
+                .Setup(s => s.ReviewClaim(5, 10, false, "reject"))
                 .ReturnsAsync(true);
 
-            // Act
-            var result = await _controller.RejectClaim(12, "reject") as RedirectToActionResult;
+            var result = await _controller.RejectClaim(5, "reject") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(ProgramCoordinatorController.Index), result.ActionName);
         }
 
         [Fact]
-        public async Task RejectClaim_RedirectsToIndex_WhenInvalid()
+        public async Task RejectClaim_Redirects_WhenInvalid()
         {
-            // Arrange
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(12, "U1", false, "reject"))
+                .Setup(s => s.ReviewClaim(5, 10, false, "reject"))
                 .ReturnsAsync(false);
 
-            // Act
-            var result = await _controller.RejectClaim(12, "reject") as RedirectToActionResult;
+            var result = await _controller.RejectClaim(5, "reject") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(ProgramCoordinatorController.Index), result.ActionName);
         }
 
+        // ---------------------------------------------------------
+        // FILE DOWNLOAD
+        // ---------------------------------------------------------
         [Fact]
-        public async Task DownloadFile_ReturnsFileResult_WhenFileExists()
+        public async Task DownloadFile_ReturnsFileStreamResult_WhenFileExists()
         {
-            // Arrange: mock valid file tuple (FileName, MemoryStream, ContentType)
-            var fileStream = new MemoryStream(new byte[] { 1, 2, 3 });
+            var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+
             _reviewerClaimServiceMock
                 .Setup(s => s.GetFileAsync(1))
-                .ReturnsAsync(("claim.pdf", fileStream, "application/pdf"));
+                .Returns(
+                    Task.FromResult<(
+                        string FileName,
+                        MemoryStream FileStream,
+                        string ContentType
+                    )?>(("claim.pdf", stream, "application/pdf"))
+                );
 
-            // Act
             var result = await _controller.DownloadFile(1) as FileStreamResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal("application/pdf", result.ContentType);
             Assert.Equal("claim.pdf", result.FileDownloadName);
@@ -253,7 +243,6 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task DownloadFile_ReturnsNotFound_WhenFileMissing()
         {
-            // Arrange: simulate null tuple return
             _reviewerClaimServiceMock
                 .Setup(s => s.GetFileAsync(99))
                 .Returns(
@@ -264,10 +253,8 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                     )?>(null)
                 );
 
-            // Act
-            var result = await _controller.DownloadFile(99);
+            var result = await _controller.DownloadFile(404);
 
-            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
     }

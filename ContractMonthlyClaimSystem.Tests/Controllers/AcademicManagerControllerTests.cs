@@ -1,78 +1,56 @@
 ﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f5452c-2788-800b-bbbc-175029690cfd
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 using ContractMonthlyClaimSystem.Controllers;
 using ContractMonthlyClaimSystem.Models;
+using ContractMonthlyClaimSystem.Models.Auth;
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
 namespace ContractMonthlyClaimSystem.Tests.Controllers
 {
-    /// <summary>
-    /// Unit tests for the AcademicManagerController class.
-    /// Each test validates controller behavior such as view rendering,
-    /// model building, interaction with services, and proper redirection.
-    /// All external dependencies are mocked to ensure test isolation.
-    /// </summary>
     public class AcademicManagerControllerTests
     {
         private readonly Mock<IReviewerClaimService> _reviewerClaimServiceMock;
-        private readonly Mock<UserManager<AppUser>> _userManagerMock;
+        private readonly Mock<IUserService> _userServiceMock;
         private readonly AcademicManagerController _controller;
 
         public AcademicManagerControllerTests()
         {
-            // Mock the required dependencies: reviewer claim service and user manager
             _reviewerClaimServiceMock = new Mock<IReviewerClaimService>();
+            _userServiceMock = new Mock<IUserService>();
 
-            var store = new Mock<IUserStore<AppUser>>();
-            _userManagerMock = new Mock<UserManager<AppUser>>(
-                store.Object,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            );
-
-            // Instantiate controller with mocks
             _controller = new AcademicManagerController(
                 _reviewerClaimServiceMock.Object,
-                _userManagerMock.Object
+                _userServiceMock.Object
             );
 
-            // Simulate a logged-in Academic Manager
+            // Simulate logged-in Academic Manager using Identity.Name
             var user = new ClaimsPrincipal(
-                new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "U1") }, "mock")
+                new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "manager@cmcs.app") }, "mock")
             );
+
             _controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext { User = user },
             };
 
-            // Default user manager behavior for the current user
-            _userManagerMock
-                .Setup(u => u.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
-                .ReturnsAsync(new AppUser { Id = "U1", UserName = "manager@cmcs.app" });
+            // Default GetUserAsync behavior
+            _userServiceMock
+                .Setup(s => s.GetUserAsync("manager@cmcs.app"))
+                .ReturnsAsync(new AppUser { Id = 1, UserName = "manager@cmcs.app" });
         }
 
+        // ---------------------------------------------------------
+        // INDEX
+        // ---------------------------------------------------------
         [Fact]
         public async Task Index_ReturnsViewWithReviewerClaimsViewModel()
         {
-            // Arrange: prepare sample claims with different statuses
-            var lecturer = new AppUser { Id = "L1", UserName = "lecturer@cmcs.app" };
+            var lecturer = new AppUser { UserName = "lecturer@cmcs.app" };
             var module = new Module { Name = "Programming 2B" };
 
             var claims = new List<ContractClaim>
@@ -85,6 +63,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                     HoursWorked = 5,
                     HourlyRate = 100,
                     ClaimStatus = ClaimStatus.PENDING_CONFIRM,
+                    AcademicManagerUserId = null,
                 },
                 new()
                 {
@@ -94,80 +73,77 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                     HoursWorked = 10,
                     HourlyRate = 200,
                     ClaimStatus = ClaimStatus.ACCEPTED,
+                    AcademicManagerUserId = 1,
                 },
             };
 
             _reviewerClaimServiceMock.Setup(s => s.GetClaimsAsync()).ReturnsAsync(claims);
 
-            // Act
             var result = await _controller.Index() as ViewResult;
 
-            // Assert
             Assert.NotNull(result);
+
             var model = Assert.IsType<ReviewerClaimsViewModel>(result.Model);
-            Assert.NotNull(model.PendingClaims);
-            Assert.NotNull(model.CompletedClaims);
-            Assert.Single(model.CompletedClaims);
+
+            Assert.Single(model.PendingClaims); // claim #1
+            Assert.Single(model.CompletedClaims); // claim #2
         }
 
+        // ---------------------------------------------------------
+        // CLAIM DETAILS
+        // ---------------------------------------------------------
         [Fact]
-        public async Task ClaimDetails_ReturnsViewWithClaimDetails()
+        public async Task ClaimDetails_ReturnsViewWithDetails()
         {
-            // Arrange
-            var lecturer = new AppUser { UserName = "lecturer@cmcs.app" };
-            var module = new Module { Name = "Programming 2B" };
             var claim = new ContractClaim
             {
                 Id = 5,
-                LecturerUser = lecturer,
-                Module = module,
+                LecturerUser = new AppUser { UserName = "lecturer@cmcs.app" },
+                Module = new Module { Name = "Programming 2B" },
                 HoursWorked = 8,
                 HourlyRate = 200,
                 LecturerComment = "Done work",
                 ClaimStatus = ClaimStatus.PENDING_CONFIRM,
             };
+
             var files = new List<UploadedFile> { new() { FileName = "proof.pdf" } };
 
             _reviewerClaimServiceMock.Setup(s => s.GetClaimAsync(5)).ReturnsAsync(claim);
             _reviewerClaimServiceMock.Setup(s => s.GetClaimFilesAsync(claim)).ReturnsAsync(files);
 
-            // Act
             var result = await _controller.ClaimDetails(5) as ViewResult;
 
-            // Assert
             Assert.NotNull(result);
+
             var model = Assert.IsType<ReviewerClaimDetailsViewModel>(result.Model);
-            Assert.Equal("proof.pdf", model.Files.First().FileName);
             Assert.Equal("Programming 2B", model.ModuleName);
+            Assert.Equal("proof.pdf", model.Files.First().FileName);
         }
 
         [Fact]
         public async Task ClaimDetails_ReturnsNotFound_WhenClaimMissing()
         {
-            // Arrange: mock null result
             _reviewerClaimServiceMock
                 .Setup(s => s.GetClaimAsync(123))
                 .ReturnsAsync((ContractClaim?)null);
 
-            // Act
             var result = await _controller.ClaimDetails(123);
 
-            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
 
+        // ---------------------------------------------------------
+        // ACCEPT CLAIM
+        // ---------------------------------------------------------
         [Fact]
         public async Task AcceptClaim_RedirectsToIndex_WhenValid()
         {
-            // Arrange
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(10, "U1", true, "approved"))
+                .Setup(s => s.ReviewClaim(10, 1, true, "approved"))
                 .ReturnsAsync(true);
 
-            // Act
             var result = await _controller.AcceptClaim(10, "approved") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(AcademicManagerController.Index), result.ActionName);
         }
@@ -175,31 +151,28 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task AcceptClaim_RedirectsToIndex_WhenInvalid()
         {
-            // Arrange: service returns false
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(99, "U1", true, "nope"))
+                .Setup(s => s.ReviewClaim(99, 1, true, "nope"))
                 .ReturnsAsync(false);
 
-            // Act
             var result = await _controller.AcceptClaim(99, "nope") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(AcademicManagerController.Index), result.ActionName);
         }
 
+        // ---------------------------------------------------------
+        // REJECT CLAIM
+        // ---------------------------------------------------------
         [Fact]
         public async Task RejectClaim_RedirectsToIndex_WhenValid()
         {
-            // Arrange
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(8, "U1", false, "reject"))
+                .Setup(s => s.ReviewClaim(8, 1, false, "reject"))
                 .ReturnsAsync(true);
 
-            // Act
             var result = await _controller.RejectClaim(8, "reject") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(AcademicManagerController.Index), result.ActionName);
         }
@@ -207,32 +180,36 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task RejectClaim_RedirectsToIndex_WhenInvalid()
         {
-            // Arrange
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(8, "U1", false, "reject"))
+                .Setup(s => s.ReviewClaim(8, 1, false, "reject"))
                 .ReturnsAsync(false);
 
-            // Act
             var result = await _controller.RejectClaim(8, "reject") as RedirectToActionResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(nameof(AcademicManagerController.Index), result.ActionName);
         }
 
+        // ---------------------------------------------------------
+        // DOWNLOAD FILE
+        // ---------------------------------------------------------
         [Fact]
-        public async Task DownloadFile_ReturnsFileResult_WhenFileExists()
+        public async Task DownloadFile_ReturnsFileStreamResult_WhenFileExists()
         {
-            // Arrange: simulate a file tuple returned by the service
             var fileStream = new MemoryStream(new byte[] { 1, 2, 3 });
+
             _reviewerClaimServiceMock
                 .Setup(s => s.GetFileAsync(1))
-                .ReturnsAsync(("claim.pdf", fileStream, "application/pdf"));
+                .Returns(
+                    Task.FromResult<(
+                        string FileName,
+                        MemoryStream FileStream,
+                        string ContentType
+                    )?>(("claim.pdf", fileStream, "application/pdf"))
+                );
 
-            // Act
             var result = await _controller.DownloadFile(1) as FileStreamResult;
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal("application/pdf", result.ContentType);
             Assert.Equal("claim.pdf", result.FileDownloadName);
@@ -241,7 +218,6 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task DownloadFile_ReturnsNotFound_WhenFileMissing()
         {
-            // Arrange: simulate no file found
             _reviewerClaimServiceMock
                 .Setup(s => s.GetFileAsync(99))
                 .Returns(
@@ -252,10 +228,8 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                     )?>(null)
                 );
 
-            // Act
             var result = await _controller.DownloadFile(99);
 
-            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
     }
