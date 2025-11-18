@@ -49,12 +49,12 @@ namespace ContractMonthlyClaimSystem.Controllers
                 return View(model);
 
             var user = await _userService.RegisterAsync(
-                model.UserName,
-                model.Password,
-                model.Email,
-                model.FirstName,
-                model.LastName,
-                roleName: "Customer"
+                username: model.UserName,
+                password: model.Password,
+                email: model.Email,
+                firstName: model.FirstName,
+                lastName: model.LastName,
+                roleName: null
             );
 
             if (user == null)
