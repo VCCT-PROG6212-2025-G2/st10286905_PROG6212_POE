@@ -40,7 +40,9 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             // Mock IWebHostEnvironment to simulate the web root directory.
             _envMock = new Mock<IWebHostEnvironment>();
-            _envMock.Setup(e => e.WebRootPath).Returns(Path.GetTempPath());
+            _envMock
+                .Setup(e => e.WebRootPath)
+                .Returns(Path.Combine(Path.GetTempPath(), $"testroot_{Guid.NewGuid()}"));
 
             // Mock the dependent services (IModuleService, IFileEncryptionService)
             // so that no external systems or file IO are used.
@@ -212,11 +214,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             await _context.SaveChangesAsync();
 
             // Save claim next
-            var claim = new ContractClaim
-            {
-                LecturerUserId = lecturerId,
-                ModuleId = module.Id
-            };
+            var claim = new ContractClaim { LecturerUserId = lecturerId, ModuleId = module.Id };
             _context.ContractClaims.Add(claim);
             await _context.SaveChangesAsync();
 
@@ -234,7 +232,9 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 new ContractClaimDocument
                 {
                     ContractClaimId = claim.Id,
-                    UploadedFileId = file.Id
+                    ContractClaim = claim,
+                    UploadedFileId = file.Id,
+                    UploadedFile = file,
                 }
             );
             await _context.SaveChangesAsync();
@@ -254,9 +254,8 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             result?.FileStream?.Dispose();
 
-            var uploadRoot = Path.Combine(_envMock.Object.WebRootPath, "uploads");
-            if (Directory.Exists(uploadRoot))
-                Directory.Delete(uploadRoot, true);
+            if (Directory.Exists(_envMock.Object.WebRootPath))
+                Directory.Delete(_envMock.Object.WebRootPath, true);
         }
     }
 }

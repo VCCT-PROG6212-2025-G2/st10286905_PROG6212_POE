@@ -40,7 +40,9 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             // Mock the hosting environment to simulate the web root path for uploads.
             _envMock = new Mock<IWebHostEnvironment>();
-            _envMock.Setup(e => e.WebRootPath).Returns(Path.GetTempPath());
+            _envMock
+                .Setup(e => e.WebRootPath)
+                .Returns(Path.Combine(Path.GetTempPath(), $"testroot_{Guid.NewGuid()}"));
 
             // Mock the file encryption service to avoid actual encryption/decryption operations.
             _encryptionMock = new Mock<IFileEncryptionService>();
@@ -252,7 +254,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             // Mock the user's role and lookup behavior.
             _userServiceMock.Setup(u => u.GetUserAsync(2)).ReturnsAsync(user);
-            
+
             // Act: review the claim as rejected by the Academic Manager.
             var result = await _service.ReviewClaim(2, 2, false, "Incorrect hours");
 
@@ -297,11 +299,9 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             // IMPORTANT: dispose MemoryStream so file unlocks
             result?.FileStream?.Dispose();
 
-            var uploadRoot = Path.Combine(_envMock.Object.WebRootPath, "uploads");
-            if (Directory.Exists(uploadRoot))
-                Directory.Delete(uploadRoot, true);
+            if (Directory.Exists(_envMock.Object.WebRootPath))
+                Directory.Delete(_envMock.Object.WebRootPath, true);
         }
-
 
         [Fact]
         public async Task GetFileAsync_ReturnsNull_WhenFileNotFound()

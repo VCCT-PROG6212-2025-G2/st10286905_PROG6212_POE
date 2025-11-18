@@ -2,6 +2,7 @@
 using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
+using Microsoft.CodeAnalysis.Elfie.Serialization;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContractMonthlyClaimSystem.Services
@@ -105,16 +106,28 @@ namespace ContractMonthlyClaimSystem.Services
             string ContentType
         )?> GetFileAsync(int fileId, int lecturerId)
         {
-            var file = await (
-                from d in _context.ContractClaimsDocuments
-                join c in _context.ContractClaims on d.ContractClaimId equals c.Id
-                where c.LecturerUserId == lecturerId && d.UploadedFileId == fileId
-                select d.UploadedFile
-            ).FirstOrDefaultAsync();
+            var claimDoc = await _context.ContractClaimsDocuments.FirstOrDefaultAsync(d =>
+                d.UploadedFileId == fileId
+            );
+            if (claimDoc == null)
+                return null;
+
+            var claim = await _context.ContractClaims.FirstOrDefaultAsync(c =>
+                c.Id == claimDoc.ContractClaimId
+            );
+            if (claim == null || claim.LecturerUserId != lecturerId)
+                return null;
+
+            var file = await _context.UploadedFiles.FirstOrDefaultAsync(f => f.Id == fileId);
             if (file == null)
                 return null;
 
-            var filePath = Path.Combine(_env.WebRootPath, file.FilePath);
+            var relativePath = file.FilePath.TrimStart(
+                Path.DirectorySeparatorChar,
+                Path.AltDirectorySeparatorChar
+            );
+
+            var filePath = Path.Combine(_env.WebRootPath, relativePath);
             if (!System.IO.File.Exists(filePath))
                 return null;
 
