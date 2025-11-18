@@ -7,7 +7,7 @@
     @if (User.Identity.IsAuthenticated)
     {
         <h1 class="display-4">Welcome, @User.Identity.Name</h1>
-        if (User.IsInRole("Lecturer") || User.IsInRole("ProgramCoordinator") || User.IsInRole("AcademicManager"))
+        if (User.IsInRole("Admin") || User.IsInRole("Lecturer") || User.IsInRole("ProgramCoordinator") || User.IsInRole("AcademicManager") || User.IsInRole("HR"))
         {
             <p>Use the navigation bar to access your dashboard.</p>
         }
