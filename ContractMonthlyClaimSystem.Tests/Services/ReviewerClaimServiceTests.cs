@@ -45,7 +45,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             // Mock the file encryption service to avoid actual encryption/decryption operations.
             _encryptionMock = new Mock<IFileEncryptionService>();
 
-            // Mock UserManager<AppUser> to simulate role checks and identity lookups.
+            // Mock IUserService
             _userServiceMock = new Mock<IUserService>();
 
             // Instantiate the service under test, injecting the mocks and context.

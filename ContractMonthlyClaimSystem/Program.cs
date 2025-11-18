@@ -1,8 +1,6 @@
 using ContractMonthlyClaimSystem.Data;
-using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 internal class Program
@@ -17,7 +15,7 @@ internal class Program
         // Add services to the container.
         builder.Services.AddControllersWithViews();
 
-        // Add identity with roles
+        // Add database
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
         builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
