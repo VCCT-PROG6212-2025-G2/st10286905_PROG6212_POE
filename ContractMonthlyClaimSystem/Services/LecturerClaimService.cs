@@ -107,7 +107,8 @@ namespace ContractMonthlyClaimSystem.Services
         {
             var file = await (
                 from d in _context.ContractClaimsDocuments
-                where d.ContractClaim.LecturerUserId == lecturerId && d.UploadedFileId == fileId
+                join c in _context.ContractClaims on d.ContractClaimId equals c.Id
+                where c.LecturerUserId == lecturerId && d.UploadedFileId == fileId
                 select d.UploadedFile
             ).FirstOrDefaultAsync();
             if (file == null)
