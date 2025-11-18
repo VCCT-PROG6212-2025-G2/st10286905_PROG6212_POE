@@ -203,28 +203,40 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public async Task GetFileAsync_ReturnsDecryptedStream_WhenFileExists()
         {
+            // Arrange
             var lecturerId = 1;
 
+            // Save module first
             var module = new Module { Name = "Networking", Code = "NET123" };
             _context.Modules.Add(module);
+            await _context.SaveChangesAsync();
 
-            var claim = new ContractClaim { LecturerUserId = lecturerId, ModuleId = module.Id };
+            // Save claim next
+            var claim = new ContractClaim
+            {
+                LecturerUserId = lecturerId,
+                ModuleId = module.Id
+            };
             _context.ContractClaims.Add(claim);
+            await _context.SaveChangesAsync();
 
+            // Save file next
             var file = new UploadedFile
             {
                 FileName = "lecturer_test_data.txt",
                 FilePath = Path.Combine("uploads", "lecturer_test_data.txt"),
             };
             _context.UploadedFiles.Add(file);
-
-            // ❗ Save here: guarantees IDs for claim and file
             await _context.SaveChangesAsync();
 
+            // Now link them
             _context.ContractClaimsDocuments.Add(
-                new ContractClaimDocument { ContractClaimId = claim.Id, UploadedFileId = file.Id }
+                new ContractClaimDocument
+                {
+                    ContractClaimId = claim.Id,
+                    UploadedFileId = file.Id
+                }
             );
-
             await _context.SaveChangesAsync();
 
             var fullPath = Path.Combine(_envMock.Object.WebRootPath, file.FilePath);
