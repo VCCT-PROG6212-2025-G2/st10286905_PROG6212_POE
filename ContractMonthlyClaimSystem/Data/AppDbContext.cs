@@ -14,6 +14,7 @@ namespace ContractMonthlyClaimSystem.Data
         public DbSet<AppUserRole> UserRoles { get; set; }
         public DbSet<Module> Modules { get; set; }
         public DbSet<LecturerModule> LecturerModules { get; set; }
+        public DbSet<LecturerDetails> LecturerDetails { get; set; }
         public DbSet<ContractClaim> ContractClaims { get; set; }
         public DbSet<UploadedFile> UploadedFiles { get; set; }
         public DbSet<ContractClaimDocument> ContractClaimsDocuments { get; set; }

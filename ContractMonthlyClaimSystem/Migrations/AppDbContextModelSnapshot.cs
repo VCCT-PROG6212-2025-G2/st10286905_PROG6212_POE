@@ -194,6 +194,25 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.ToTable("ContractClaimsDocuments");
                 });
 
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerDetails", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BankDetails")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("LecturerDetails");
+                });
+
             modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerModule", b =>
                 {
                     b.Property<int>("LecturerUserId")
@@ -327,6 +346,17 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.Navigation("ContractClaim");
 
                     b.Navigation("UploadedFile");
+                });
+
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerDetails", b =>
+                {
+                    b.HasOne("ContractMonthlyClaimSystem.Models.Auth.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ContractMonthlyClaimSystem.Models.LecturerModule", b =>
