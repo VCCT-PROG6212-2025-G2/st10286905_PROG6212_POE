@@ -88,6 +88,40 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.ToTable("UserRoles");
                 });
 
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.AutoReviewRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AutoComment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AutoDecision")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ComparisonOp")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ComparisonValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ComparisonVar")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReviewerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AutoReviewRules");
+                });
+
             modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ContractClaim", b =>
                 {
                     b.Property<int>("Id")

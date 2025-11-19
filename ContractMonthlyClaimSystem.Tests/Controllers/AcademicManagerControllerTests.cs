@@ -139,7 +139,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         public async Task AcceptClaim_RedirectsToIndex_WhenValid()
         {
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(10, 1, true, "approved"))
+                .Setup(s => s.ReviewClaimAsync(10, 1, true, "approved"))
                 .ReturnsAsync(true);
 
             var result = await _controller.AcceptClaim(10, "approved") as RedirectToActionResult;
@@ -152,7 +152,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         public async Task AcceptClaim_RedirectsToIndex_WhenInvalid()
         {
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(99, 1, true, "nope"))
+                .Setup(s => s.ReviewClaimAsync(99, 1, true, "nope"))
                 .ReturnsAsync(false);
 
             var result = await _controller.AcceptClaim(99, "nope") as RedirectToActionResult;
@@ -168,7 +168,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         public async Task RejectClaim_RedirectsToIndex_WhenValid()
         {
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(8, 1, false, "reject"))
+                .Setup(s => s.ReviewClaimAsync(8, 1, false, "reject"))
                 .ReturnsAsync(true);
 
             var result = await _controller.RejectClaim(8, "reject") as RedirectToActionResult;
@@ -181,7 +181,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         public async Task RejectClaim_RedirectsToIndex_WhenInvalid()
         {
             _reviewerClaimServiceMock
-                .Setup(s => s.ReviewClaim(8, 1, false, "reject"))
+                .Setup(s => s.ReviewClaimAsync(8, 1, false, "reject"))
                 .ReturnsAsync(false);
 
             var result = await _controller.RejectClaim(8, "reject") as RedirectToActionResult;

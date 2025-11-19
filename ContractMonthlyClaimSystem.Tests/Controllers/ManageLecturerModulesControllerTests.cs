@@ -90,7 +90,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.Index() as ViewResult;
 
             Assert.NotNull(result);
-            var vm = Assert.IsType<ManageModulesIndexViewModel>(result.Model);
+            var vm = Assert.IsType<ManageLecturerModulesIndexViewModel>(result.Model);
 
             Assert.Equal(2, vm.Lecturers.Count);
             Assert.Equal(2, vm.Modules.Count);
@@ -103,7 +103,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task CreateModule_AddsModule_AndRedirects()
         {
-            var model = new ManageModulesIndexViewModel
+            var model = new ManageLecturerModulesIndexViewModel
             {
                 NewModule = new Module { Id = 1, Name = "AI Systems" },
             };

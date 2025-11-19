@@ -112,7 +112,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         {
             var user = await _userService.GetUserAsync(User.Identity?.Name);
 
-            var res = await _reviewerClaimService.ReviewClaim(id, user.Id, accept: true, comment);
+            var res = await _reviewerClaimService.ReviewClaimAsync(id, user.Id, accept: true, comment);
             if (res == false)
                 return RedirectToAction(nameof(Index)); // Invalid claim
 
@@ -125,7 +125,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         {
             var user = await _userService.GetUserAsync(User.Identity?.Name);
 
-            var res = await _reviewerClaimService.ReviewClaim(id, user.Id, accept: false, comment);
+            var res = await _reviewerClaimService.ReviewClaimAsync(id, user.Id, accept: false, comment);
             if (res == false)
                 return RedirectToAction(nameof(Index)); // Invalid claim
 

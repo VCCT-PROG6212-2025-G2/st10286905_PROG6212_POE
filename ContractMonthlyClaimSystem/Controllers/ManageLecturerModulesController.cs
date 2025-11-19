@@ -36,7 +36,7 @@ namespace ContractMonthlyClaimSystem.Controllers
 
             var allModules = await _moduleService.GetModulesAsync();
 
-            var viewModel = new ManageModulesIndexViewModel
+            var viewModel = new ManageLecturerModulesIndexViewModel
             {
                 Lecturers = lecturerVMs,
                 Modules = allModules,
@@ -47,7 +47,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateModule(ManageModulesIndexViewModel model)
+        public async Task<IActionResult> CreateModule(ManageLecturerModulesIndexViewModel model)
         {
             await _moduleService.AddModuleAsync(model.NewModule);
             return RedirectToAction(nameof(Index));

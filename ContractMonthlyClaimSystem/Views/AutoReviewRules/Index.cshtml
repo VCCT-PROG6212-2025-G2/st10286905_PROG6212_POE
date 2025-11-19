@@ -1,0 +1,164 @@
+﻿@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/691e05a8-f160-800b-9c24-fce1a6ea7417 *@
+
+@model AutoReviewRulesIndexViewModel
+@{
+    ViewBag.Title = "Auto Review Rules";
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Existing Rules -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-sliders"></i> Your Auto Review Rules</span>
+
+        <form asp-action="AutoReview" method="post" class="m-0 p-0">
+            <input type="hidden" name="returnUrl" value="@Url.Action("Index")" />
+            <button class="btn btn-light btn-sm">
+                <i class="bi bi-lightning-charge-fill"></i> Run AutoReview
+            </button>
+        </form>
+    </div>
+
+    <div class="card-body">
+        @if (!Model.Rules.Any())
+        {
+            <p class="text-muted"><em>You have no Auto Review Rules.</em></p>
+        }
+        else
+        {
+            <table class="table table-hover table-striped align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Decision</th>
+                        <th>Variable</th>
+                        <th>Operator</th>
+                        <th>Value</th>
+                        <th>Comment</th>
+                        <th>Priority</th>
+                        <th style="width: 220px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rule in Model.Rules)
+                    {
+                        <tr>
+                            <td>@rule.AutoDecision</td>
+                            <td>@rule.ComparisonVar</td>
+                            <td>@rule.ComparisonOp</td>
+                            <td>@rule.ComparisonValue</td>
+                            <td>@rule.AutoComment</td>
+                            <td>@rule.Priority</td>
+
+                            <td>
+                                <div class="d-flex gap-2">
+
+                                    <!-- Increase -->
+                                    <form asp-action="IncreaseRulePriority" method="post">
+                                        <input type="hidden" name="ruleId" value="@rule.Id" />
+                                        <button class="btn btn-sm btn-outline-success" title="Increase Priority">
+                                            <i class="bi bi-arrow-up"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Decrease -->
+                                    <form asp-action="DecreaseRulePriority" method="post">
+                                        <input type="hidden" name="ruleId" value="@rule.Id" />
+                                        <button class="btn btn-sm btn-outline-warning" title="Decrease Priority">
+                                            <i class="bi bi-arrow-down"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Edit -->
+                                    <a asp-action="EditRule" asp-route-ruleId="@rule.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+
+                                    <!-- Delete -->
+                                    <form asp-action="RemoveRule" method="post">
+                                        <input type="hidden" name="ruleId" value="@rule.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<!-- Add New Rule -->
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white fw-bold">
+        <i class="bi bi-plus-circle"></i> Add New Rule
+    </div>
+
+    <div class="card-body">
+        <form asp-action="AddRule" method="post">
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Comparison Variable</label>
+                    <select asp-for="NewRule.ComparisonVar" asp-items="ViewBag.ComparisonVars"
+                            class="form-select"></select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Comparison Operator</label>
+                    <select asp-for="NewRule.ComparisonOp" asp-items="ViewBag.ComparisonOps"
+                            class="form-select"></select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="NewRule.ComparisonValue" class="form-label">Value</label>
+                    <input asp-for="NewRule.ComparisonValue" type="number" step="0.01"
+                           class="form-control" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Auto Decision</label>
+                    <select asp-for="NewRule.AutoDecision" asp-items="ViewBag.Decisions"
+                            class="form-select"></select>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="NewRule.AutoComment" class="form-label">Comment</label>
+                    <input asp-for="NewRule.AutoComment" class="form-control" placeholder="Optional comment.." />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="NewRule.Priority" class="form-label">Priority</label>
+                    <input asp-for="NewRule.Priority" type="number" class="form-control" />
+                </div>
+            </div>
+
+            <div class="text-end">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Add Rule
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>

@@ -94,7 +94,10 @@ namespace ContractMonthlyClaimSystem.Data
                 {
                     LecturerUserId = lecturerUser.Id,
                     ModuleId = foundModule.Id,
-                    HourlyRate = 250m + 50m * i++
+                    HourlyRate =
+                        250m
+                        + 50m * i++ * (foundModule.Code != "CSEC1337" ? 1 : 0)
+                        + (foundModule.Code == "CSEC1337" ? 9001 : 0),
                 };
                 if (!await _context.LecturerModules.ContainsAsync(lecturerModule))
                     _context.LecturerModules.Add(lecturerModule);

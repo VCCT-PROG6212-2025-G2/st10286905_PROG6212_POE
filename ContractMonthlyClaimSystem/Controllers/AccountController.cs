@@ -30,7 +30,7 @@ namespace ContractMonthlyClaimSystem.Controllers
             var principal = _userService.BuildClaimsPrincipal(user);
             await HttpContext.SignInAsync(principal);
 
-            TempData["Success"] = $"Welcome back, {user.FirstName ?? user.UserName}!";
+            TempData["Success"] = $"Welcome back, {(user.FirstName + user.LastName) ?? user.UserName}!";
 
             // Redirect to ReturnUrl if provided, otherwise Home
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
@@ -70,7 +70,7 @@ namespace ContractMonthlyClaimSystem.Controllers
             await HttpContext.SignInAsync(principal);
 
             TempData["Success"] =
-                $"Welcome, {user.FirstName ?? user.UserName}! Your account has been created.";
+                $"Welcome, {(user.FirstName + user.LastName) ?? user.UserName}! Your account has been created.";
             return RedirectToAction("Index", "Home");
         }
 

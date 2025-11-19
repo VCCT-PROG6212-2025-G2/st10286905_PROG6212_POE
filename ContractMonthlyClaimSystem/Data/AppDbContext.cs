@@ -17,5 +17,6 @@ namespace ContractMonthlyClaimSystem.Data
         public DbSet<ContractClaim> ContractClaims { get; set; }
         public DbSet<UploadedFile> UploadedFiles { get; set; }
         public DbSet<ContractClaimDocument> ContractClaimsDocuments { get; set; }
+        public DbSet<AutoReviewRule> AutoReviewRules { get; set; }
     }
 }
