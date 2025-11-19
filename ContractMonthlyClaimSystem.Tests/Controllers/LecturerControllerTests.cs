@@ -1,5 +1,6 @@
 ﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f5452c-2788-800b-bbbc-175029690cfd
 
+using System.Security.Claims;
 using ContractMonthlyClaimSystem.Controllers;
 using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.Auth;
@@ -8,7 +9,6 @@ using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using System.Security.Claims;
 
 namespace ContractMonthlyClaimSystem.Tests.Controllers
 {
@@ -23,10 +23,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             _claimServiceMock = new Mock<ILecturerClaimService>();
             _userServiceMock = new Mock<IUserService>();
 
-            _controller = new LecturerController(
-                _claimServiceMock.Object,
-                _userServiceMock.Object
-            );
+            _controller = new LecturerController(_claimServiceMock.Object, _userServiceMock.Object);
 
             // Fake HTTP user
             var user = new ClaimsPrincipal(
@@ -38,7 +35,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
 
             _controller.ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext { User = user }
+                HttpContext = new DefaultHttpContext { User = user },
             };
 
             // Default user lookup
@@ -62,7 +59,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                     HoursWorked = 10,
                     HourlyRate = 100,
                     Module = new Module { Name = "PROG6212" },
-                    ClaimStatus = ClaimStatus.PENDING_CONFIRM
+                    ClaimStatus = ClaimStatus.PENDING_CONFIRM,
                 },
                 new()
                 {
@@ -71,20 +68,90 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                     HoursWorked = 5,
                     HourlyRate = 200,
                     Module = new Module { Name = "CLDV6212" },
-                    ClaimStatus = ClaimStatus.ACCEPTED
-                }
+                    ClaimStatus = ClaimStatus.ACCEPTED,
+                },
             };
 
-            _claimServiceMock
-                .Setup(s => s.GetClaimsForLecturerAsync(1))
-                .ReturnsAsync(claims);
+            _claimServiceMock.Setup(s => s.GetClaimsForLecturerAsync(1)).ReturnsAsync(claims);
 
             var result = await _controller.Index() as ViewResult;
 
             Assert.NotNull(result);
             var model = Assert.IsType<LecturerClaimsViewModel>(result.Model);
+
             Assert.Single(model.PendingClaims);
             Assert.Single(model.CompletedClaims);
+        }
+
+        // ---------------------------------------------------------
+        // GET HOURLY RATE
+        // ---------------------------------------------------------
+        [Fact]
+        public async Task GetHourlyRate_ReturnsJson_WhenRateExists()
+        {
+            // Arrange
+            const int moduleId = 42;
+            const decimal expectedRate = 500m;
+
+            _claimServiceMock
+                .Setup(s => s.GetLecturerHourlyRateAsync(1, moduleId))
+                .ReturnsAsync(expectedRate);
+
+            // Act
+            var result = await _controller.GetHourlyRate(moduleId);
+
+            // Assert
+            var json = Assert.IsType<JsonResult>(result);
+            Assert.NotNull(json.Value);
+
+            // Anonymous type, so use reflection to read the property.
+            var value = json.Value!;
+            var prop = value.GetType().GetProperty("hourlyRate");
+            Assert.NotNull(prop);
+
+            var hourlyRate = (decimal?)prop!.GetValue(value);
+            Assert.Equal(expectedRate, hourlyRate);
+        }
+
+        [Fact]
+        public async Task GetHourlyRate_ReturnsNotFound_WhenRateMissing()
+        {
+            // Arrange
+            const int moduleId = 42;
+
+            _claimServiceMock
+                .Setup(s => s.GetLecturerHourlyRateAsync(1, moduleId))
+                .ReturnsAsync((decimal?)null);
+
+            // Act
+            var result = await _controller.GetHourlyRate(moduleId);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task GetHourlyRate_ReturnsNotFound_WhenLecturerNotFound()
+        {
+            // Arrange
+            const int moduleId = 42;
+
+            // Override the default setup: user lookup now returns null
+            _userServiceMock
+                .Setup(s => s.GetUserAsync("lecturer@cmcs.app"))
+                .ReturnsAsync((AppUser?)null);
+
+            // Act
+            var result = await _controller.GetHourlyRate(moduleId);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+
+            // Optional: ensure the claim service was never called
+            _claimServiceMock.Verify(
+                s => s.GetLecturerHourlyRateAsync(It.IsAny<int>(), It.IsAny<int>()),
+                Times.Never
+            );
         }
 
         // ---------------------------------------------------------
@@ -95,12 +162,10 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         {
             var modules = new List<Module>
             {
-                new() { Id = 1, Name = "Programming 2B" }
+                new() { Id = 1, Name = "Programming 2B" },
             };
 
-            _claimServiceMock
-                .Setup(s => s.GetModulesForLecturerAsync(1))
-                .ReturnsAsync(modules);
+            _claimServiceMock.Setup(s => s.GetModulesForLecturerAsync(1)).ReturnsAsync(modules);
 
             var result = await _controller.CreateClaim() as ViewResult;
 
@@ -124,7 +189,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                 .ReturnsAsync(
                     new List<Module>
                     {
-                        new() { Id = 1, Name = "Networking 3A" }
+                        new() { Id = 1, Name = "Networking 3A" },
                     }
                 );
 
@@ -147,14 +212,12 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                 HoursWorked = 8,
                 HourlyRate = 150,
                 LecturerComment = "Work done",
-                Files = new List<IFormFile>()
+                Files = new List<IFormFile>(),
             };
 
             var claim = new ContractClaim { Id = 10, LecturerUserId = 1 };
 
-            _claimServiceMock
-                .Setup(s => s.CreateClaimAsync(1, model))
-                .ReturnsAsync(claim);
+            _claimServiceMock.Setup(s => s.CreateClaimAsync(1, model)).ReturnsAsync(claim);
 
             _claimServiceMock
                 .Setup(s => s.AddFilesToClaimAsync(claim, model.Files))
@@ -180,13 +243,10 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                 HourlyRate = 100,
                 LecturerComment = "Done",
                 Module = new Module { Name = "PROG6212" },
-                ClaimStatus = ClaimStatus.PENDING_CONFIRM
+                ClaimStatus = ClaimStatus.PENDING_CONFIRM,
             };
 
-            var files = new List<UploadedFile>
-            {
-                new() { FileName = "proof.pdf" }
-            };
+            var files = new List<UploadedFile> { new() { FileName = "proof.pdf" } };
 
             _claimServiceMock.Setup(s => s.GetClaimAsync(1, 1)).ReturnsAsync(claim);
             _claimServiceMock.Setup(s => s.GetClaimFilesAsync(claim)).ReturnsAsync(files);
@@ -201,9 +261,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task ClaimDetails_ReturnsNotFound_WhenClaimMissing()
         {
-            _claimServiceMock
-                .Setup(s => s.GetClaimAsync(1, 1))
-                .ReturnsAsync((ContractClaim?)null);
+            _claimServiceMock.Setup(s => s.GetClaimAsync(1, 1)).ReturnsAsync((ContractClaim?)null);
 
             var result = await _controller.ClaimDetails(1);
 
@@ -221,9 +279,11 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             _claimServiceMock
                 .Setup(s => s.GetFileAsync(1, 1))
                 .Returns(
-                    Task.FromResult<(string FileName, MemoryStream FileStream, string ContentType)?>(
-                        ("doc.pdf", fileStream, "application/pdf")
-                    )
+                    Task.FromResult<(
+                        string FileName,
+                        MemoryStream FileStream,
+                        string ContentType
+                    )?>(("doc.pdf", fileStream, "application/pdf"))
                 );
 
             var result = await _controller.DownloadFile(1) as FileStreamResult;
@@ -233,20 +293,22 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             Assert.Equal("doc.pdf", result.FileDownloadName);
         }
 
-
         [Fact]
         public async Task DownloadFile_ReturnsNotFound_WhenFileMissing()
         {
             _claimServiceMock
                 .Setup(s => s.GetFileAsync(99, 1))
                 .Returns(
-                    Task.FromResult<(string FileName, MemoryStream FileStream, string ContentType)?>(null)
+                    Task.FromResult<(
+                        string FileName,
+                        MemoryStream FileStream,
+                        string ContentType
+                    )?>(null)
                 );
 
             var result = await _controller.DownloadFile(99);
 
             Assert.IsType<NotFoundResult>(result);
         }
-
     }
 }

@@ -35,7 +35,7 @@ else
                         </div>
                         <div class="col-md-6 mb-3">
                             <label asp-for="HourlyRate" class="form-label fw-semibold"></label>
-                            <input asp-for="HourlyRate" class="form-control" id="hourlyRate" placeholder="e.g. 250" />
+                            <input asp-for="HourlyRate" class="form-control" id="hourlyRate" readonly />
                             <span asp-validation-for="HourlyRate" class="text-danger small"></span>
                         </div>
                     </div>
@@ -107,6 +107,28 @@ else
 
             document.getElementById("hoursWorked").addEventListener("input", calculatePayment);
             document.getElementById("hourlyRate").addEventListener("input", calculatePayment);
+            document.getElementById("ModuleId").addEventListener("change", async function () {
+                const moduleId = this.value;
+
+                const response = await fetch(`/Lecturer/GetHourlyRate?moduleId=${moduleId}`);
+
+                if (!response.ok) {
+                    document.getElementById("hourlyRate").value = "";
+                    calculatePayment();
+                    return;
+                }
+
+                const data = await response.json();
+                const rate = parseFloat(data.hourlyRate);
+
+                document.getElementById("hourlyRate").value = rate.toFixed(2);
+
+                // Store rate globally for calculator
+                window.currentRate = rate;
+
+                calculatePayment();
+            });
+            document.getElementById("ModuleId").dispatchEvent(new Event("change")); // Update HourlyRate immediately on page load
         </script>
 
         @* Client-side input validation for file uploads, with descriptive error messages *@

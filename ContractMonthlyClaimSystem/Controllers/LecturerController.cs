@@ -7,10 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Lecturer")]
-    public class LecturerController(
-        ILecturerClaimService claimService,
-        IUserService userService
-    ) : Controller
+    public class LecturerController(ILecturerClaimService claimService, IUserService userService)
+        : Controller
     {
         private readonly ILecturerClaimService _claimService = claimService;
         private readonly IUserService _userService = userService;
@@ -34,7 +32,7 @@ namespace ContractMonthlyClaimSystem.Controllers
                             PaymentAmount = c.HoursWorked * c.HourlyRate,
                             ProgramCoordinatorDecision = c.ProgramCoordinatorDecision,
                             AcademicManagerDecision = c.AcademicManagerDecision,
-                            ClaimStatus = c.ClaimStatus
+                            ClaimStatus = c.ClaimStatus,
                         }),
                 ],
 
@@ -54,6 +52,19 @@ namespace ContractMonthlyClaimSystem.Controllers
                 ],
             };
             return View(vm);
+        }
+
+        public async Task<IActionResult> GetHourlyRate(int moduleId)
+        {
+            var lecturer = await _userService.GetUserAsync(User.Identity?.Name);
+            if (lecturer == null)
+                return NotFound();
+
+            var rate = await _claimService.GetLecturerHourlyRateAsync(lecturer.Id, moduleId);
+            if (rate == null)
+                return NotFound();
+
+            return Json(new { hourlyRate = rate });
         }
 
         public async Task<IActionResult> CreateClaim()
@@ -83,7 +94,18 @@ namespace ContractMonthlyClaimSystem.Controllers
             // Validate uploaded files
             // AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/s/t_68f4c1d5f7e08191b41d09967a63a506
             long maxFileSize = 10 * 1024 * 1024; // 10 MB
-            string[] permittedExtensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".md"];
+            string[] permittedExtensions =
+            [
+                ".pdf",
+                ".doc",
+                ".docx",
+                ".xls",
+                ".xlsx",
+                ".ppt",
+                ".pptx",
+                ".txt",
+                ".md",
+            ];
 
             if (model.Files is not null && model.Files.Count > 0)
             {
@@ -92,13 +114,19 @@ namespace ContractMonthlyClaimSystem.Controllers
                     var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
                     if (string.IsNullOrEmpty(ext) || !permittedExtensions.Contains(ext))
                     {
-                        ModelState.AddModelError("Files", $"File '{file.FileName}' has an unsupported type.");
+                        ModelState.AddModelError(
+                            "Files",
+                            $"File '{file.FileName}' has an unsupported type."
+                        );
                         continue;
                     }
 
                     if (file.Length > maxFileSize)
                     {
-                        ModelState.AddModelError("Files", $"File '{file.FileName}' exceeds the 10 MB size limit.");
+                        ModelState.AddModelError(
+                            "Files",
+                            $"File '{file.FileName}' exceeds the 10 MB size limit."
+                        );
                     }
                 }
 
@@ -148,7 +176,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         {
             var lecturer = await _userService.GetUserAsync(User.Identity?.Name);
 
-            var file = await _claimService.GetFileAsync(id, lecturer.Id); 
+            var file = await _claimService.GetFileAsync(id, lecturer.Id);
             if (file == null)
                 return NotFound();
 

@@ -10,10 +10,8 @@ using Microsoft.EntityFrameworkCore;
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Admin,HR")]
-    public class ManageModulesController(
-        IUserService userService,
-        IModuleService moduleService
-    ) : Controller
+    public class ManageModulesController(IUserService userService, IModuleService moduleService)
+        : Controller
     {
         private readonly IUserService _userService = userService;
         private readonly IModuleService _moduleService = moduleService;
@@ -70,14 +68,23 @@ namespace ContractMonthlyClaimSystem.Controllers
                 return NotFound();
 
             var allModules = await _moduleService.GetModulesAsync();
-            var assignedModules = await _moduleService.GetModulesForLecturerAsync(lecturer.Id);
+            var lecturerModules = await _moduleService.GetLecturerModulesAsync(lecturer.Id);
 
             var viewModel = new ManageLecturerModulesViewModel
             {
                 LecturerId = id,
                 LecturerName = $"{lecturer.FirstName} {lecturer.LastName}",
                 AllModules = allModules,
-                AssignedModuleIds = [.. assignedModules.Select(m => m.Id)],
+                AssignedModuleIds = [.. lecturerModules.Select(lm => lm.ModuleId)],
+                AssignedModulesDetailed =
+                [
+                    .. lecturerModules.Select(lm => new AssignedLecturerModuleViewModel
+                    {
+                        ModuleId = lm.ModuleId,
+                        ModuleName = lm.Module.Name,
+                        HourlyRate = lm.HourlyRate,
+                    }),
+                ],
             };
 
             return View(viewModel);
@@ -85,9 +92,13 @@ namespace ContractMonthlyClaimSystem.Controllers
 
         // Assign a module
         [HttpPost]
-        public async Task<IActionResult> AddLecturerModule(int lecturerId, int moduleId)
+        public async Task<IActionResult> AddLecturerModule(
+            int lecturerId,
+            int moduleId,
+            decimal hourlyRate
+        )
         {
-            await _moduleService.AddLecturerModuleAsync(lecturerId, moduleId);
+            await _moduleService.AddLecturerModuleAsync(lecturerId, moduleId, hourlyRate);
             return RedirectToAction(nameof(ManageLecturerModules), new { id = lecturerId });
         }
 
@@ -96,6 +107,18 @@ namespace ContractMonthlyClaimSystem.Controllers
         public async Task<IActionResult> RemoveLecturerModule(int lecturerId, int moduleId)
         {
             await _moduleService.RemoveLecturerModuleAsync(lecturerId, moduleId);
+            return RedirectToAction(nameof(ManageLecturerModules), new { id = lecturerId });
+        }
+
+        // Update a lecturer module's hourly rate
+        [HttpPost]
+        public async Task<IActionResult> UpdateLecturerModuleHourlyRate(
+            int lecturerId,
+            int moduleId,
+            decimal hourlyRate
+        )
+        {
+            await _moduleService.UpdateLecturerModuleHourlyRate(lecturerId, moduleId, hourlyRate);
             return RedirectToAction(nameof(ManageLecturerModules), new { id = lecturerId });
         }
     }

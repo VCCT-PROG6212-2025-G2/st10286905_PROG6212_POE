@@ -40,6 +40,13 @@ namespace ContractMonthlyClaimSystem.Services
         public async Task<List<Module>> GetModulesForLecturerAsync(int lecturerId) =>
             await _moduleService.GetModulesForLecturerAsync(lecturerId);
 
+        public async Task<decimal?> GetLecturerHourlyRateAsync(int lecturerId, int moduleId) =>
+            (
+                await _context.LecturerModules.FirstOrDefaultAsync(lm =>
+                    lm.LecturerUserId == lecturerId && lm.ModuleId == moduleId
+                )
+            )?.HourlyRate;
+
         public async Task<ContractClaim> CreateClaimAsync(
             int lecturerId,
             CreateClaimViewModel model
@@ -50,7 +57,7 @@ namespace ContractMonthlyClaimSystem.Services
                 LecturerUserId = lecturerId,
                 ModuleId = model.ModuleId,
                 HoursWorked = model.HoursWorked,
-                HourlyRate = model.HourlyRate,
+                HourlyRate = await GetLecturerHourlyRateAsync(lecturerId, model.ModuleId) ?? 0m,
                 LecturerComment = model.LecturerComment,
             };
 

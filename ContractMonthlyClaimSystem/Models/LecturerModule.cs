@@ -11,5 +11,7 @@ namespace ContractMonthlyClaimSystem.Models
 
         public int ModuleId { get; set; }
         public virtual Module Module { get; set; }
+
+        public decimal HourlyRate { get; set; }
     }
 }

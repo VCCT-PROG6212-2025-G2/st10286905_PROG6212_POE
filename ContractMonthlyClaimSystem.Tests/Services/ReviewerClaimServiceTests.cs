@@ -22,13 +22,14 @@ namespace ContractMonthlyClaimSystem.Tests.Services
     /// This suite verifies that the service correctly handles claim retrieval,
     /// claim reviews, and file decryption operations.
     /// </summary>
-    public class ReviewerClaimServiceTests
+    public class ReviewerClaimServiceTests : IDisposable
     {
         private readonly AppDbContext _context;
         private readonly Mock<IWebHostEnvironment> _envMock;
         private readonly Mock<IFileEncryptionService> _encryptionMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly ReviewerClaimService _service;
+        private readonly string _tempRoot;
 
         public ReviewerClaimServiceTests()
         {
@@ -39,10 +40,12 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             _context = new AppDbContext(options);
 
             // Mock the hosting environment to simulate the web root path for uploads.
+            _tempRoot = Path.Combine(Path.GetTempPath(), $"testroot_{Guid.NewGuid()}");
+            Directory.CreateDirectory(_tempRoot);
             _envMock = new Mock<IWebHostEnvironment>();
             _envMock
                 .Setup(e => e.WebRootPath)
-                .Returns(Path.Combine(Path.GetTempPath(), $"testroot_{Guid.NewGuid()}"));
+                .Returns(_tempRoot);
 
             // Mock the file encryption service to avoid actual encryption/decryption operations.
             _encryptionMock = new Mock<IFileEncryptionService>();
@@ -57,6 +60,14 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 _userServiceMock.Object,
                 _encryptionMock.Object
             );
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(_tempRoot))
+            {
+                Directory.Delete(_tempRoot, true);
+            }
         }
 
         [Fact]
@@ -298,9 +309,6 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             // IMPORTANT: dispose MemoryStream so file unlocks
             result?.FileStream?.Dispose();
-
-            if (Directory.Exists(_envMock.Object.WebRootPath))
-                Directory.Delete(_envMock.Object.WebRootPath, true);
         }
 
         [Fact]

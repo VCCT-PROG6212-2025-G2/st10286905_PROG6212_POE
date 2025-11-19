@@ -18,6 +18,12 @@ namespace ContractMonthlyClaimSystem.Services
                 select lm.Module
             ).ToListAsync();
 
+        public async Task<List<LecturerModule>> GetLecturerModulesAsync(int lecturerId) =>
+            await _context
+                .LecturerModules.Include(lm => lm.Module)
+                .Where(lm => lm.LecturerUserId == lecturerId)
+                .ToListAsync();
+
         public async Task AddModuleAsync(Module module)
         {
             if (string.IsNullOrWhiteSpace(module.Name) || string.IsNullOrWhiteSpace(module.Code))
@@ -40,14 +46,19 @@ namespace ContractMonthlyClaimSystem.Services
             }
         }
 
-        public async Task AddLecturerModuleAsync(int lecturerId, int moduleId)
+        public async Task AddLecturerModuleAsync(int lecturerId, int moduleId, decimal hourlyRate)
         {
             var lecturerModule = new LecturerModule
             {
                 LecturerUserId = lecturerId,
                 ModuleId = moduleId,
+                HourlyRate = hourlyRate,
             };
-            if (!await _context.LecturerModules.ContainsAsync(lecturerModule))
+            if (
+                !await _context.LecturerModules.AnyAsync(lm =>
+                    lm.LecturerUserId == lecturerId && lm.ModuleId == moduleId
+                )
+            )
             {
                 _context.LecturerModules.Add(lecturerModule);
                 await _context.SaveChangesAsync();
@@ -62,6 +73,22 @@ namespace ContractMonthlyClaimSystem.Services
             if (lecturerModule != null)
             {
                 _context.LecturerModules.Remove(lecturerModule);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task UpdateLecturerModuleHourlyRate(
+            int lecturerId,
+            int moduleId,
+            decimal hourlyRate
+        )
+        {
+            var lecturerModule = await _context.LecturerModules.FirstOrDefaultAsync(lm =>
+                lm.LecturerUserId == lecturerId && lm.ModuleId == moduleId
+            );
+            if (lecturerModule != null)
+            {
+                lecturerModule.HourlyRate = hourlyRate;
                 await _context.SaveChangesAsync();
             }
         }

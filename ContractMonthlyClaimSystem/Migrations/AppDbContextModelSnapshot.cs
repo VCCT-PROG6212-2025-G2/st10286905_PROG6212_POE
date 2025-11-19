@@ -168,6 +168,9 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.Property<int>("ModuleId")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("HourlyRate")
+                        .HasColumnType("decimal(18,2)");
+
                     b.HasKey("LecturerUserId", "ModuleId");
 
                     b.HasIndex("ModuleId");

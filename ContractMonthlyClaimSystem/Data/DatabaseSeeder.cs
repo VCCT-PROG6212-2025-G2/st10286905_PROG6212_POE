@@ -74,6 +74,7 @@ namespace ContractMonthlyClaimSystem.Data
 
             var lecturerUser = await _userService.GetUserAsync("lecturer");
 
+            int i = 0;
             foreach (var module in modules)
             {
                 if (
@@ -93,6 +94,7 @@ namespace ContractMonthlyClaimSystem.Data
                 {
                     LecturerUserId = lecturerUser.Id,
                     ModuleId = foundModule.Id,
+                    HourlyRate = 250m + 50m * i++
                 };
                 if (!await _context.LecturerModules.ContainsAsync(lecturerModule))
                     _context.LecturerModules.Add(lecturerModule);

@@ -14,8 +14,6 @@ namespace ContractMonthlyClaimSystem.Models.ViewModels
         [Display(Name = "Hours Worked")]
         public decimal HoursWorked { get; set; }
 
-        [Required]
-        [Range(0, 10000)]
         [Display(Name = "Hourly Rate")]
         public decimal HourlyRate { get; set; }
 
