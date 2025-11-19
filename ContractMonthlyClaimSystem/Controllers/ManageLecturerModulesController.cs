@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Admin,HR")]
-    public class ManageModulesController(IUserService userService, IModuleService moduleService)
+    public class ManageLecturerModulesController(IUserService userService, IModuleService moduleService)
         : Controller
     {
         private readonly IUserService _userService = userService;

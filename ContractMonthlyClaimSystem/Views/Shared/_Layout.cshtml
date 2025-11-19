@@ -49,13 +49,13 @@
                             @if (User.IsInRole("Admin") || User.IsInRole("HR"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link" asp-area="" asp-controller="ManageModules" asp-action="Index">Manage Modules</a>
+                                    <a class="nav-link" asp-area="" asp-controller="ManageLecturerModules" asp-action="Index">Manage Lecturers & Modules</a>
                                 </li>
                             }
                             @if (User.IsInRole("Admin") || User.IsInRole("HR"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link" asp-area="" asp-controller="ManageRoles" asp-action="Index">Manage Roles</a>
+                                    <a class="nav-link" asp-area="" asp-controller="ManageUserRoles" asp-action="Index">Manage Users & Roles</a>
                                 </li>
                             }
                         }

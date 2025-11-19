@@ -10,18 +10,18 @@ using Moq;
 
 namespace ContractMonthlyClaimSystem.Tests.Controllers
 {
-    public class ManageRolesControllerTests
+    public class ManageUserRolesControllerTests
     {
         private readonly Mock<IRoleService> _roleServiceMock;
         private readonly Mock<IUserService> _userServiceMock;
-        private readonly ManageRolesController _controller;
+        private readonly ManageUserRolesController _controller;
 
-        public ManageRolesControllerTests()
+        public ManageUserRolesControllerTests()
         {
             _roleServiceMock = new Mock<IRoleService>();
             _userServiceMock = new Mock<IUserService>();
 
-            _controller = new ManageRolesController(
+            _controller = new ManageUserRolesController(
                 _roleServiceMock.Object,
                 _userServiceMock.Object
             );
@@ -127,7 +127,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.Manage(model) as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageRolesController.Index), result.ActionName);
+            Assert.Equal(nameof(ManageUserRolesController.Index), result.ActionName);
 
             _roleServiceMock.Verify(
                 s => s.UpdateUserRolesAsync(
@@ -161,7 +161,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.AddRole("Lecturer") as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageRolesController.Index), result.ActionName);
+            Assert.Equal(nameof(ManageUserRolesController.Index), result.ActionName);
 
             _roleServiceMock.Verify(s => s.CreateRoleAsync("Lecturer"), Times.Once);
         }
@@ -172,7 +172,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.AddRole("") as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageRolesController.Index), result.ActionName);
+            Assert.Equal(nameof(ManageUserRolesController.Index), result.ActionName);
 
             _roleServiceMock.Verify(s => s.CreateRoleAsync(It.IsAny<string>()), Times.Never);
         }
@@ -188,7 +188,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.DeleteRole("Lecturer") as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageRolesController.Index), result.ActionName);
+            Assert.Equal(nameof(ManageUserRolesController.Index), result.ActionName);
 
             _roleServiceMock.Verify(s => s.DeleteRoleAsync("Lecturer"), Times.Once);
         }

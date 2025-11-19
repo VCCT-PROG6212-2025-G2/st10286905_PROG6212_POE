@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Admin,HR")]
-    public class ManageRolesController(IRoleService roleService, IUserService userService)
+    public class ManageUserRolesController(IRoleService roleService, IUserService userService)
         : Controller
     {
         private readonly IRoleService _roleService = roleService;

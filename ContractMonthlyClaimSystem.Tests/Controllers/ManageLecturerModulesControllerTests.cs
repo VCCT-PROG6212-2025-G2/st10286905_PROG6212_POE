@@ -12,18 +12,18 @@ using Moq;
 
 namespace ContractMonthlyClaimSystem.Tests.Controllers
 {
-    public class ManageModulesControllerTests
+    public class ManageLecturerModulesControllerTests
     {
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IModuleService> _moduleServiceMock;
-        private readonly ManageModulesController _controller;
+        private readonly ManageLecturerModulesController _controller;
 
-        public ManageModulesControllerTests()
+        public ManageLecturerModulesControllerTests()
         {
             _userServiceMock = new Mock<IUserService>();
             _moduleServiceMock = new Mock<IModuleService>();
 
-            _controller = new ManageModulesController(
+            _controller = new ManageLecturerModulesController(
                 _userServiceMock.Object,
                 _moduleServiceMock.Object
             );
@@ -115,7 +115,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.CreateModule(model) as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageModulesController.Index), result.ActionName);
+            Assert.Equal(nameof(ManageLecturerModulesController.Index), result.ActionName);
 
             _moduleServiceMock.Verify(
                 s => s.AddModuleAsync(It.Is<Module>(m => m.Name == "AI Systems")),
@@ -134,7 +134,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.DeleteModule(3) as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageModulesController.Index), result.ActionName);
+            Assert.Equal(nameof(ManageLecturerModulesController.Index), result.ActionName);
 
             _moduleServiceMock.Verify(s => s.RemoveModuleAsync(3), Times.Once);
         }
@@ -217,7 +217,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.AddLecturerModule(10, 7, 250m) as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageModulesController.ManageLecturerModules), result.ActionName);
+            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturerModules), result.ActionName);
             Assert.Equal(10, result.RouteValues!["id"]);
         }
 
@@ -234,7 +234,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var result = await _controller.RemoveLecturerModule(10, 7) as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageModulesController.ManageLecturerModules), result.ActionName);
+            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturerModules), result.ActionName);
             Assert.Equal(10, result.RouteValues!["id"]);
         }
 
@@ -253,7 +253,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                 as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageModulesController.ManageLecturerModules), result.ActionName);
+            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturerModules), result.ActionName);
             Assert.Equal(10, result.RouteValues!["id"]);
 
             _moduleServiceMock.Verify(

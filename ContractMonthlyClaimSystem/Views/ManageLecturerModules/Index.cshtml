@@ -1,6 +1,10 @@
 ﻿@model ManageModulesIndexViewModel
 @* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca99b5-dc0c-800b-b554-c315e49df063 *@
 
+@{
+    ViewBag.Title = "Manage Lecturers & Modules";
+}
+
 <!-- Lecturers -->
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-primary text-white fw-bold">
@@ -24,7 +28,7 @@
                         <td>
                             <a asp-action="ManageLecturerModules" asp-route-id="@lecturer.Id"
                                class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil-square"></i> Manage Modules
+                                <i class="bi bi-pencil-square"></i> Manage Lecturer
                             </a>
                         </td>
                     </tr>
