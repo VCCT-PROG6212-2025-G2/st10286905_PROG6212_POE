@@ -5,23 +5,17 @@
 
 ## Default Login Credentials
 ### Admin Account
-email: `admin@cmcs.app`
+username: `admin`
 password: `Admin!!1`
+### HR Account
+username: `humanresources`
+password: `HumanResources!!1`
 ### Lecturer Account
-email: `lecturer@cmcs.app`
+username: `lecturer`
 password: `Lecturer!!1`
 ### Program Coordinator Account
-email: `programcoordinator@cmcs.app`
+username: `programcoordinator`
 password: `ProgramCoordinator!!1`
 ### Academic Manager Account
-email: `academicmanager@cmcs.app`
+username: `academicmanager`
 password: `AcademicManager!!1`
-
-## Changes From Part 1 To Part 2
-For more information on changes and feedback addressed, see [Part 2 - Report](Documents/Part%202%20-%20Report.pdf).
-
-Listed below are the major changes from Part 1 to Part 2:
-- Refactor to use services
-- Encrypt file uploads
-- Improve file upload validation and error display
-- Implement unit tests for main functionality
