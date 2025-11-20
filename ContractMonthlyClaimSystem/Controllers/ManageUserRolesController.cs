@@ -4,6 +4,7 @@ using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ContractMonthlyClaimSystem.Controllers
 {
@@ -18,16 +19,27 @@ namespace ContractMonthlyClaimSystem.Controllers
         public async Task<IActionResult> Index()
         {
             var usersWithRoles = await _roleService.GetUsersWithRolesAsync();
-            var model = usersWithRoles
-                .Select(ur => new UserRolesViewModel
+            var allRoles = await _roleService.GetRolesAsync();
+            var model = new ManageUserRolesIndexViewModel
+            {
+                Users =
+                [
+                    .. usersWithRoles.Select(ur => new UserRolesViewModel
+                    {
+                        UserId = ur.User.Id,
+                        UserName = ur.User.UserName,
+                        Roles = ur.Roles,
+                    }),
+                ],
+                RoleSelectList = allRoles.Select(r => new SelectListItem
                 {
-                    UserId = ur.User.Id,
-                    UserName = ur.User.UserName,
-                    Roles = ur.Roles,
-                })
-                .ToList();
+                    Text = r.Name,
+                    Value = r.Name,
+                    Selected = r.Name == "Lecturer",
+                }),
+            };
 
-            ViewBag.AllRoles = await _roleService.GetRolesAsync();
+            ViewBag.AllRoles = allRoles;
             return View(model);
         }
 
@@ -78,7 +90,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         {
             if (!string.IsNullOrWhiteSpace(roleName))
                 await _roleService.CreateRoleAsync(roleName);
-            
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -87,6 +99,31 @@ namespace ContractMonthlyClaimSystem.Controllers
         public async Task<IActionResult> DeleteRole(string roleName)
         {
             await _roleService.DeleteRoleAsync(roleName);
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Create user with role
+        [HttpPost]
+        public async Task<IActionResult> CreateUser(ManageUserRolesIndexViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _userService.RegisterAsync(
+                    model.CreateUser.UserName,
+                    model.CreateUser.Password,
+                    model.CreateUser.Email,
+                    model.CreateUser.FirstName,
+                    model.CreateUser.LastName,
+                    model.CreateUser.Role
+                );
+
+                if (user != null)
+                    TempData["Success"] =
+                        $"Successfully created user: {user.UserName} with role: {model.CreateUser.Role}.";
+                else
+                    TempData["Error"] = "Error creating user: username is already taken.";
+            }
 
             return RedirectToAction(nameof(Index));
         }

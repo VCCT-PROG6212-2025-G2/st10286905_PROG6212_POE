@@ -1,15 +1,30 @@
-﻿@using ContractMonthlyClaimSystem.Models.Auth
-@model List<UserRolesViewModel>
+﻿@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca99b5-dc0c-800b-b554-c315e49df063 *@
 
-@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca99b5-dc0c-800b-b554-c315e49df063 *@
+@using ContractMonthlyClaimSystem.Models.Auth
+@model ManageUserRolesIndexViewModel
 
 @{
     ViewBag.Title = "Manage Users & Roles";
     var roles = ViewBag.AllRoles as List<AppRole>;
 }
 
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <!-- Users and Roles -->
-<div class="card shadow-sm mb-4">
+<div class="card mb-4 shadow-sm">
     <div class="card-header bg-primary text-white fw-bold">
         <i class="bi bi-people"></i> Users and their Roles
     </div>
@@ -23,13 +38,14 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var user in Model)
+                @foreach (var user in Model.Users)
                 {
                     <tr>
                         <td>@user.UserName</td>
                         <td>@string.Join(", ", user.Roles)</td>
-                        <td>
-                            <a asp-action="Manage" asp-route-userId="@user.UserId"
+                        <td class="text-end">
+                            <a asp-action="Manage"
+                               asp-route-userId="@user.UserId"
                                class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil-square"></i> Manage Roles
                             </a>
@@ -41,8 +57,7 @@
     </div>
 </div>
 
-<!-- Existing Roles -->
-<div class="card shadow-sm">
+<div class="card mb-4 shadow-sm">
     <div class="card-header bg-secondary text-white fw-bold">
         <i class="bi bi-shield-lock"></i> Existing Roles
     </div>
@@ -59,8 +74,10 @@
                 {
                     <tr>
                         <td>@role.Name</td>
-                        <td>
-                            <form asp-action="DeleteRole" method="post" class="d-inline">
+                        <td class="text-end">
+                            <form asp-action="DeleteRole"
+                                  method="post"
+                                  class="d-inline">
                                 <input type="hidden" name="roleName" value="@role.Name" />
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i> Delete
@@ -73,11 +90,89 @@
         </table>
 
         <!-- Add Role -->
-        <form asp-action="AddRole" method="post" class="input-group" style="max-width:400px;">
-            <input type="text" name="roleName" placeholder="New role name" class="form-control" />
-            <button type="submit" class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> Add Role
+        <div class="d-flex justify-content-center">
+            <form asp-action="AddRole"
+                  method="post"
+                  class="input-group"
+                  style="max-width:400px;">
+                <input type="text"
+                       name="roleName"
+                       placeholder="New role name"
+                       class="form-control"
+                       required />
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Add Role
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-success text-white fw-bold">
+        <i class="bi bi-person-plus"></i> Create New User With Role
+    </div>
+    <div class="card-body">
+        <form asp-action="CreateUser" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CreateUser.UserName" class="form-label"></label>
+                    <input asp-for="CreateUser.UserName" class="form-control" />
+                    <span asp-validation-for="CreateUser.UserName" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CreateUser.Email" class="form-label"></label>
+                    <input asp-for="CreateUser.Email" class="form-control" />
+                    <span asp-validation-for="CreateUser.Email" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CreateUser.FirstName" class="form-label"></label>
+                    <input asp-for="CreateUser.FirstName" class="form-control" />
+                    <span asp-validation-for="CreateUser.FirstName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CreateUser.LastName" class="form-label"></label>
+                    <input asp-for="CreateUser.LastName" class="form-control" />
+                    <span asp-validation-for="CreateUser.LastName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CreateUser.Password" class="form-label"></label>
+                    <input asp-for="CreateUser.Password" type="password" class="form-control" />
+                    <span asp-validation-for="CreateUser.Password" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CreateUser.ConfirmPassword" class="form-label"></label>
+                    <input asp-for="CreateUser.ConfirmPassword" type="password" class="form-control" />
+                    <span asp-validation-for="CreateUser.ConfirmPassword" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CreateUser.Role" class="form-label">Role</label>
+                <select asp-for="CreateUser.Role"
+                        class="form-select"
+                        asp-items="Model.RoleSelectList">
+                </select>
+                <span asp-validation-for="CreateUser.Role" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100">
+                <i class="bi bi-check-circle"></i> Create User
             </button>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

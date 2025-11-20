@@ -1,11 +1,12 @@
-﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f5452c-2788-800b-bbbc-175029690cfd
+﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/691f83a3-e278-800b-bbf1-9d36291d982e
 
 using ContractMonthlyClaimSystem.Controllers;
-using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.Auth;
 using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Moq;
 
 namespace ContractMonthlyClaimSystem.Tests.Controllers
@@ -31,18 +32,21 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         // INDEX
         // ---------------------------------------------------------
         [Fact]
-        public async Task Index_ReturnsViewWithUserRoles()
+        public async Task Index_ReturnsViewWithCorrectModel()
         {
             var usersWithRoles = new List<(AppUser User, IList<string> Roles)>
             {
-                (new AppUser { Id = 1, UserName = "user1@cmcs.app" }, new List<string> { "Lecturer" }),
-                (new AppUser { Id = 2, UserName = "user2@cmcs.app" }, new List<string> { "Admin" })
+                (
+                    new AppUser { Id = 1, UserName = "user1@cmcs.app" },
+                    new List<string> { "Lecturer" }
+                ),
+                (new AppUser { Id = 2, UserName = "user2@cmcs.app" }, new List<string> { "Admin" }),
             };
 
             var allRoles = new List<AppRole>
             {
                 new() { Id = 1, Name = "Admin" },
-                new() { Id = 2, Name = "Lecturer" }
+                new() { Id = 2, Name = "Lecturer" },
             };
 
             _roleServiceMock.Setup(s => s.GetUsersWithRolesAsync()).ReturnsAsync(usersWithRoles);
@@ -52,8 +56,9 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
 
             Assert.NotNull(result);
 
-            var model = Assert.IsType<List<UserRolesViewModel>>(result.Model);
-            Assert.Equal(2, model.Count);
+            var model = Assert.IsType<ManageUserRolesIndexViewModel>(result.Model);
+            Assert.Equal(2, model.Users.Count());
+            Assert.Equal(2, model.RoleSelectList.Count());
             Assert.Equal(allRoles, result.ViewData["AllRoles"]);
         }
 
@@ -68,7 +73,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             var allRoles = new List<AppRole>
             {
                 new() { Id = 1, Name = "Admin" },
-                new() { Id = 2, Name = "Lecturer" }
+                new() { Id = 2, Name = "Lecturer" },
             };
 
             _userServiceMock.Setup(s => s.GetUserAsync(10)).ReturnsAsync(user);
@@ -112,13 +117,13 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                 Roles =
                 [
                     new RoleSelectionViewModel { RoleName = "Admin", Selected = false },
-                    new RoleSelectionViewModel { RoleName = "Lecturer", Selected = true }
-                ]
+                    new RoleSelectionViewModel { RoleName = "Lecturer", Selected = true },
+                ],
             };
 
-            var user = new AppUser { Id = 10, UserName = "user" };
-
-            _userServiceMock.Setup(s => s.GetUserAsync(10)).ReturnsAsync(user);
+            _userServiceMock
+                .Setup(s => s.GetUserAsync(10))
+                .ReturnsAsync(new AppUser { Id = 10, UserName = "user" });
 
             _roleServiceMock
                 .Setup(s => s.UpdateUserRolesAsync(10, It.IsAny<IEnumerable<string>>()))
@@ -130,10 +135,13 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             Assert.Equal(nameof(ManageUserRolesController.Index), result.ActionName);
 
             _roleServiceMock.Verify(
-                s => s.UpdateUserRolesAsync(
-                    10,
-                    It.Is<IEnumerable<string>>(roles => roles.Contains("Lecturer") && !roles.Contains("Admin"))
-                ),
+                s =>
+                    s.UpdateUserRolesAsync(
+                        10,
+                        It.Is<IEnumerable<string>>(roles =>
+                            roles.Contains("Lecturer") && !roles.Contains("Admin")
+                        )
+                    ),
                 Times.Once
             );
         }
@@ -167,7 +175,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         }
 
         [Fact]
-        public async Task AddRole_DoesNothing_WhenNameIsEmpty()
+        public async Task AddRole_DoesNothing_WhenEmpty()
         {
             var result = await _controller.AddRole("") as RedirectToActionResult;
 
@@ -191,6 +199,88 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             Assert.Equal(nameof(ManageUserRolesController.Index), result.ActionName);
 
             _roleServiceMock.Verify(s => s.DeleteRoleAsync("Lecturer"), Times.Once);
+        }
+
+        // ---------------------------------------------------------
+        // CREATE USER
+        // ---------------------------------------------------------
+        [Fact]
+        public async Task CreateUser_CreatesUser_WhenModelValid()
+        {
+            var model = new ManageUserRolesIndexViewModel
+            {
+                CreateUser = new CreateUserViewModel
+                {
+                    UserName = "newuser",
+                    Password = "Test123!",
+                    ConfirmPassword = "Test123!",
+                    Email = "new@cmcs.app",
+                    FirstName = "Test",
+                    LastName = "User",
+                    Role = "Lecturer",
+                },
+            };
+
+            _userServiceMock
+                .Setup(s =>
+                    s.RegisterAsync(
+                        model.CreateUser.UserName,
+                        model.CreateUser.Password,
+                        model.CreateUser.Email,
+                        model.CreateUser.FirstName,
+                        model.CreateUser.LastName,
+                        model.CreateUser.Role
+                    )
+                )
+                .ReturnsAsync(new AppUser { Id = 1, UserName = "newuser" });
+
+            var httpContext = new DefaultHttpContext();
+            var tempProvider = new Mock<ITempDataProvider>();
+
+            _controller.TempData = new TempDataDictionary(httpContext, tempProvider.Object);
+
+            var result = await _controller.CreateUser(model) as RedirectToActionResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(nameof(ManageUserRolesController.Index), result.ActionName);
+
+            _userServiceMock.Verify(
+                s =>
+                    s.RegisterAsync(
+                        "newuser",
+                        "Test123!",
+                        "new@cmcs.app",
+                        "Test",
+                        "User",
+                        "Lecturer"
+                    ),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task CreateUser_DoesNotCreate_WhenModelInvalid()
+        {
+            var model = new ManageUserRolesIndexViewModel();
+            _controller.ModelState.AddModelError("x", "error");
+
+            var result = await _controller.CreateUser(model) as RedirectToActionResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(nameof(ManageUserRolesController.Index), result.ActionName);
+
+            _userServiceMock.Verify(
+                s =>
+                    s.RegisterAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>()
+                    ),
+                Times.Never
+            );
         }
     }
 }
