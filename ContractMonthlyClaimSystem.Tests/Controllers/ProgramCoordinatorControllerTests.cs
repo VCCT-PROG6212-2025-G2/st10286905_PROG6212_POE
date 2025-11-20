@@ -226,11 +226,9 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             _reviewerClaimServiceMock
                 .Setup(s => s.GetFileAsync(1))
                 .Returns(
-                    Task.FromResult<(
-                        string FileName,
-                        MemoryStream FileStream,
-                        string ContentType
-                    )?>(("claim.pdf", stream, "application/pdf"))
+                    Task.FromResult<(Stream FileStream, string ContentType, string FileName)?>(
+                        (stream, "application/pdf", "claim.pdf")
+                    )
                 );
 
             var result = await _controller.DownloadFile(1) as FileStreamResult;
@@ -246,11 +244,7 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             _reviewerClaimServiceMock
                 .Setup(s => s.GetFileAsync(99))
                 .Returns(
-                    Task.FromResult<(
-                        string FileName,
-                        MemoryStream FileStream,
-                        string ContentType
-                    )?>(null)
+                    Task.FromResult<(Stream FileStream, string ContentType, string FileName)?>(null)
                 );
 
             var result = await _controller.DownloadFile(404);

@@ -1,10 +1,5 @@
-﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f5452c-2788-800b-bbbc-175029690cfd
+﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/691f16e8-5034-800b-898a-2c7eb4000f43
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models;
 using ContractMonthlyClaimSystem.Models.Auth;
@@ -16,17 +11,12 @@ using Moq;
 
 namespace ContractMonthlyClaimSystem.Tests.Services
 {
-    /// <summary>
-    /// Unit tests for the ReviewerClaimService class.
-    /// </summary>
-    public class ReviewerClaimServiceTests : IDisposable
+    public class ReviewerClaimServiceTests
     {
         private readonly AppDbContext _context;
-        private readonly Mock<IWebHostEnvironment> _envMock;
-        private readonly Mock<IFileEncryptionService> _encryptionMock;
         private readonly Mock<IUserService> _userServiceMock;
+        private readonly Mock<IFileService> _fileServiceMock;
         private readonly ReviewerClaimService _service;
-        private readonly string _tempRoot;
 
         public ReviewerClaimServiceTests()
         {
@@ -36,98 +26,90 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             _context = new AppDbContext(options);
 
-            _tempRoot = Path.Combine(Path.GetTempPath(), $"testroot_{Guid.NewGuid()}");
-            Directory.CreateDirectory(_tempRoot);
-
-            _envMock = new Mock<IWebHostEnvironment>();
-            _envMock.Setup(e => e.WebRootPath).Returns(_tempRoot);
-
-            _encryptionMock = new Mock<IFileEncryptionService>();
-
             _userServiceMock = new Mock<IUserService>();
+            _fileServiceMock = new Mock<IFileService>();
 
             _service = new ReviewerClaimService(
                 _context,
-                _envMock.Object,
                 _userServiceMock.Object,
-                _encryptionMock.Object
+                _fileServiceMock.Object
             );
         }
 
-        public void Dispose()
-        {
-            if (Directory.Exists(_tempRoot))
-                Directory.Delete(_tempRoot, true);
-        }
-
         // -----------------------------------------------------------
-        // Claim Retrieval
+        // GetClaimsAsync
         // -----------------------------------------------------------
-
         [Fact]
-        public async Task GetClaimsAsync_ReturnsAllClaimsWithIncludes()
+        public async Task GetClaimsAsync_ReturnsAllClaims()
         {
-            var module = new Module { Name = "Programming", Code = "PROG6212" };
-            var lecturer = new AppUser { Id = 10, UserName = "lecturer@test" };
+            var c = new ContractClaim
+            {
+                Module = new Module { Code = "X", Name = "Test" },
+                LecturerUser = new AppUser { Id = 1 },
+            };
 
-            _context.Modules.Add(module);
-            _context.Users.Add(lecturer);
-            _context.ContractClaims.Add(
-                new ContractClaim { Module = module, LecturerUser = lecturer }
-            );
-
+            _context.ContractClaims.Add(c);
             await _context.SaveChangesAsync();
 
             var result = await _service.GetClaimsAsync();
 
             Assert.Single(result);
-            Assert.Equal(module.Id, result.First().ModuleId);
-            Assert.Equal(lecturer.Id, result.First().LecturerUserId);
+            Assert.NotNull(result[0].Module);
+            Assert.NotNull(result[0].LecturerUser);
         }
 
+        // -----------------------------------------------------------
+        // GetClaimAsync
+        // -----------------------------------------------------------
         [Fact]
-        public async Task GetClaimAsync_ReturnsSpecificClaim()
+        public async Task GetClaimAsync_ReturnsClaim()
         {
-            var lecturer = new AppUser { Id = 20, UserName = "x" };
-            var module = new Module { Name = "M", Code = "C" };
+            var lecturer = new AppUser { Id = 5, UserName = "lect" };
+            var module = new Module { Code = "C101", Name = "Networking" };
 
             _context.Users.Add(lecturer);
             _context.Modules.Add(module);
 
-            var claim = new ContractClaim { LecturerUser = lecturer, Module = module };
-            _context.ContractClaims.Add(claim);
+            var claim = new ContractClaim
+            {
+                LecturerUserId = lecturer.Id,
+                LecturerUser = lecturer,
+                ModuleId = module.Id,
+                Module = module,
+            };
 
+            _context.ContractClaims.Add(claim);
             await _context.SaveChangesAsync();
 
             var result = await _service.GetClaimAsync(claim.Id);
 
             Assert.NotNull(result);
             Assert.Equal(claim.Id, result!.Id);
+            Assert.Equal(module.Id, result.ModuleId);
+            Assert.Equal(lecturer.Id, result.LecturerUserId);
         }
 
         // -----------------------------------------------------------
-        // Claim Files
+        // GetClaimFilesAsync
         // -----------------------------------------------------------
-
         [Fact]
-        public async Task GetClaimFilesAsync_ReturnsLinkedFiles()
+        public async Task GetClaimFilesAsync_ReturnsFiles()
         {
-            var claim = new ContractClaim { Id = 1 };
+            var claim = new ContractClaim { Id = 10 };
             var file = new UploadedFile
             {
-                Id = 5,
-                FileName = "doc.pdf",
-                FilePath = "/x",
+                Id = 50,
+                FileName = "a.pdf",
+                FilePath = "x",
             };
 
             _context.ContractClaims.Add(claim);
             _context.UploadedFiles.Add(file);
-
             _context.ContractClaimsDocuments.Add(
                 new ContractClaimDocument
                 {
-                    ContractClaimId = 1,
-                    UploadedFileId = 5,
+                    ContractClaimId = 10,
+                    UploadedFileId = 50,
                     UploadedFile = file,
                 }
             );
@@ -137,27 +119,27 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             var result = await _service.GetClaimFilesAsync(claim);
 
             Assert.Single(result!);
-            Assert.Equal("doc.pdf", result![0].FileName);
+            Assert.Equal("a.pdf", result![0].FileName);
         }
 
         // -----------------------------------------------------------
-        // ReviewClaimAsync – Validation
+        // ReviewClaimAsync — invalid user
         // -----------------------------------------------------------
-
         [Fact]
-        public async Task ReviewClaim_ReturnsFalse_WhenUserNotFound()
+        public async Task ReviewClaimAsync_ReturnsFalse_WhenUserNotFound()
         {
-            _userServiceMock
-                .Setup(u => u.GetUserAsync(It.IsAny<int>()))
-                .ReturnsAsync((AppUser?)null);
+            _userServiceMock.Setup(u => u.GetUserAsync(99)).ReturnsAsync((AppUser?)null);
 
-            var res = await _service.ReviewClaimAsync(1, 9999, true, "ok");
+            var res = await _service.ReviewClaimAsync(1, 99, true, "ok");
 
             Assert.False(res);
         }
 
+        // -----------------------------------------------------------
+        // ReviewClaimAsync — user missing role
+        // -----------------------------------------------------------
         [Fact]
-        public async Task ReviewClaim_ReturnsFalse_WhenUserHasNoValidRole()
+        public async Task ReviewClaimAsync_ReturnsFalse_WhenUserHasNoReviewRole()
         {
             _userServiceMock
                 .Setup(u => u.GetUserAsync(1))
@@ -165,26 +147,11 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                     new AppUser
                     {
                         Id = 1,
-                        UserRoles =
-                        [
-                            new AppUserRole
-                            {
-                                UserId = 1,
-                                Role = new AppRole { Name = "Lecturer" },
-                            },
-                        ],
+                        UserRoles = [new AppUserRole { Role = new AppRole { Name = "Lecturer" } }],
                     }
                 );
 
-            var lecturer = new AppUser { UserName = "L" };
-            var module = new Module { Code = "M1", Name = "M" };
-
-            _context.Users.Add(lecturer);
-            _context.Modules.Add(module);
-            _context.ContractClaims.Add(
-                new ContractClaim { LecturerUser = lecturer, Module = module }
-            );
-
+            _context.ContractClaims.Add(new ContractClaim());
             await _context.SaveChangesAsync();
 
             var res = await _service.ReviewClaimAsync(1, 1, true, "x");
@@ -193,11 +160,10 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         }
 
         // -----------------------------------------------------------
-        // ReviewClaimAsync – Updates
+        // PC review
         // -----------------------------------------------------------
-
         [Fact]
-        public async Task ReviewClaim_Updates_ForProgramCoordinator()
+        public async Task ReviewClaimAsync_ProgramCoordinator_UpdatesFields()
         {
             _userServiceMock
                 .Setup(u => u.GetUserAsync(1))
@@ -216,33 +182,23 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                     }
                 );
 
-            var lecturer = new AppUser { Id = 3, UserName = "L" };
-            var module = new Module { Code = "M1", Name = "M" };
-
-            _context.Users.Add(lecturer);
-            _context.Modules.Add(module);
-            _context.ContractClaims.Add(
-                new ContractClaim
-                {
-                    Id = 10,
-                    LecturerUser = lecturer,
-                    Module = module,
-                }
-            );
-
+            var claim = new ContractClaim { Id = 30 };
+            _context.ContractClaims.Add(claim);
             await _context.SaveChangesAsync();
 
-            var res = await _service.ReviewClaimAsync(10, 1, true, "OK");
-
+            var res = await _service.ReviewClaimAsync(30, 1, true, "OK");
             Assert.True(res);
-            var updated = await _context.ContractClaims.FindAsync(10);
 
-            Assert.Equal(ClaimDecision.VERIFIED, updated?.ProgramCoordinatorDecision);
-            Assert.Equal("OK", updated?.ProgramCoordinatorComment);
+            var updated = await _context.ContractClaims.FindAsync(30);
+            Assert.Equal(ClaimDecision.VERIFIED, updated!.ProgramCoordinatorDecision);
+            Assert.Equal("OK", updated.ProgramCoordinatorComment);
         }
 
+        // -----------------------------------------------------------
+        // AM review
+        // -----------------------------------------------------------
         [Fact]
-        public async Task ReviewClaim_Updates_ForAcademicManager()
+        public async Task ReviewClaimAsync_AcademicManager_UpdatesFields()
         {
             _userServiceMock
                 .Setup(u => u.GetUserAsync(2))
@@ -261,28 +217,15 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                     }
                 );
 
-            var lecturer = new AppUser { Id = 5 };
-            var module = new Module { Code = "M1", Name = "M" };
-
-            _context.Users.Add(lecturer);
-            _context.Modules.Add(module);
-
-            _context.ContractClaims.Add(
-                new ContractClaim
-                {
-                    Id = 20,
-                    LecturerUser = lecturer,
-                    Module = module,
-                }
-            );
-
+            var claim = new ContractClaim { Id = 40 };
+            _context.ContractClaims.Add(claim);
             await _context.SaveChangesAsync();
 
-            var res = await _service.ReviewClaimAsync(20, 2, false, "Bad");
-
+            var res = await _service.ReviewClaimAsync(40, 2, false, "Bad");
             Assert.True(res);
 
-            var updated = await _context.ContractClaims.FindAsync(20);
+            var updated = await _context.ContractClaims.FindAsync(40);
+
             Assert.Equal(ClaimDecision.REJECTED, updated!.AcademicManagerDecision);
             Assert.Equal("Bad", updated.AcademicManagerComment);
         }
@@ -290,58 +233,47 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         // -----------------------------------------------------------
         // GetFileAsync
         // -----------------------------------------------------------
-
         [Fact]
-        public async Task GetFileAsync_ReturnsDecryptedFile()
+        public async Task GetFileAsync_ReturnsFile_WhenFileServiceReturns()
         {
-            var file = new UploadedFile
-            {
-                Id = 99,
-                FileName = "x.txt",
-                FilePath = Path.Combine("uploads", "x.txt"),
-            };
+            var expected = (
+                FileStream: (Stream)new MemoryStream(new byte[] { 1 }),
+                ContentType: "application/pdf",
+                FileName: "x.pdf"
+            );
 
-            _context.UploadedFiles.Add(file);
-            await _context.SaveChangesAsync();
+            _fileServiceMock.Setup(f => f.GetFileAsync(10)).ReturnsAsync(expected);
 
-            var full = Path.Combine(_tempRoot, file.FilePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
-            await File.WriteAllBytesAsync(full, new byte[] { 5, 5, 5 });
-
-            _encryptionMock
-                .Setup(e => e.DecryptToStreamAsync(full, It.IsAny<MemoryStream>()))
-                .Returns(Task.CompletedTask);
-
-            var result = await _service.GetFileAsync(99);
+            var result = await _service.GetFileAsync(10);
 
             Assert.NotNull(result);
-            Assert.Equal("x.txt", result?.FileName);
-
-            result?.FileStream?.Dispose();
+            Assert.Equal("x.pdf", result!.Value.FileName);
         }
 
         [Fact]
-        public async Task GetFileAsync_ReturnsNull_WhenFileMissing()
+        public async Task GetFileAsync_ReturnsNull_WhenFileServiceReturnsNull()
         {
-            Assert.Null(await _service.GetFileAsync(555));
+            _fileServiceMock
+                .Setup(f => f.GetFileAsync(It.IsAny<int>()))
+                .ReturnsAsync(((Stream, string, string)?)null);
+
+            Assert.Null(await _service.GetFileAsync(55));
         }
 
         // -----------------------------------------------------------
         // AutoReviewRule CRUD
         // -----------------------------------------------------------
-
         [Fact]
         public async Task AddAutoReviewRuleAsync_AddsRule()
         {
-            var rule = new AutoReviewRule { ReviewerId = 1, Priority = 5 };
+            var rule = new AutoReviewRule { ReviewerId = 1 };
 
             await _service.AddAutoReviewRuleAsync(rule);
-
             Assert.Single(_context.AutoReviewRules);
         }
 
         [Fact]
-        public async Task GetAutoReviewRulesForUserAsync_ReturnsCorrectRules()
+        public async Task GetAutoReviewRulesForUserAsync_ReturnsCorrect()
         {
             _context.AutoReviewRules.Add(new AutoReviewRule { ReviewerId = 1 });
             _context.AutoReviewRules.Add(new AutoReviewRule { ReviewerId = 2 });
@@ -350,117 +282,94 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             var res = await _service.GetAutoReviewRulesForUserAsync(1);
 
             Assert.Single(res);
-            Assert.Equal(1, res.First().ReviewerId);
+            Assert.Equal(1, res[0].ReviewerId);
         }
 
         [Fact]
-        public async Task GetAutoReviewRule_ReturnsSpecificRule()
+        public async Task UpdateAutoReviewRuleAsync_UpdatesRecord()
         {
-            var r = new AutoReviewRule { ReviewerId = 3 };
+            var r = new AutoReviewRule { ReviewerId = 3, AutoComment = "old" };
             _context.AutoReviewRules.Add(r);
             await _context.SaveChangesAsync();
 
-            var res = await _service.GetAutoReviewRule(r.Id);
+            r.AutoComment = "new";
 
-            Assert.NotNull(res);
-            Assert.Equal(3, res?.ReviewerId);
-        }
-
-        [Fact]
-        public async Task UpdateAutoReviewRuleAsync_UpdatesRule()
-        {
-            var r = new AutoReviewRule { ReviewerId = 5, AutoComment = "" };
-            _context.AutoReviewRules.Add(r);
-            await _context.SaveChangesAsync();
-
-            r.AutoComment = "Updated";
-
-            await _service.UpdateAutoReviewRuleAsync(r.Id, 5, r);
+            await _service.UpdateAutoReviewRuleAsync(r.Id, 3, r);
 
             var updated = await _context.AutoReviewRules.FindAsync(r.Id);
-            Assert.Equal("Updated", updated!.AutoComment);
+            Assert.Equal("new", updated!.AutoComment);
         }
 
         [Fact]
-        public async Task RemoveAutoReviewRuleAsync_RemovesRule()
+        public async Task RemoveAutoReviewRuleAsync_Removes()
         {
-            var r = new AutoReviewRule { ReviewerId = 7 };
+            var r = new AutoReviewRule { ReviewerId = 4 };
             _context.AutoReviewRules.Add(r);
             await _context.SaveChangesAsync();
 
-            await _service.RemoveAutoReviewRuleAsync(r.Id, 7);
-
+            await _service.RemoveAutoReviewRuleAsync(r.Id, 4);
             Assert.Empty(_context.AutoReviewRules);
         }
 
         // -----------------------------------------------------------
         // AutoReviewPendingClaimsAsync
         // -----------------------------------------------------------
-
         [Fact]
-        public async Task AutoReviewPendingClaimsAsync_ReviewsMatchingClaims()
+        public async Task AutoReviewPendingClaimsAsync_ReviewsMatching()
         {
+            // User role
             _userServiceMock
-                .Setup(u => u.GetUserAsync(100))
+                .Setup(u => u.GetUserAsync(10))
                 .ReturnsAsync(
                     new AppUser
                     {
-                        Id = 100,
+                        Id = 10,
                         UserRoles =
                         [
-                            new AppUserRole
-                            {
-                                UserId = 100,
-                                Role = new AppRole { Name = "ProgramCoordinator" },
-                            },
+                            new AppUserRole { Role = new AppRole { Name = "ProgramCoordinator" } },
                         ],
                     }
                 );
 
-            var lecturer = new AppUser { Id = 50, UserName = "lect" };
-            var module = new Module
-            {
-                Id = 10,
-                Code = "X",
-                Name = "Test",
-            };
+            // Lecture + Module
+            _context.Users.Add(new AppUser { Id = 50 });
+            _context.Modules.Add(
+                new Module
+                {
+                    Id = 2,
+                    Code = "ABC123",
+                    Name = "Google Engineering",
+                }
+            );
 
-            _context.Users.Add(lecturer);
-            _context.Modules.Add(module);
-
-            var c1 = new ContractClaim
+            var claim = new ContractClaim
             {
                 Id = 1,
-                LecturerUserId = lecturer.Id,
-                ModuleId = module.Id,
-
-                HourlyRate = 100,
-                HoursWorked = 1,
-
-                ProgramCoordinatorUserId = null,
-                AcademicManagerUserId = null,
-
+                LecturerUserId = 50,
+                ModuleId = 2,
+                HourlyRate = 200,
+                HoursWorked = 2,
                 ClaimStatus = ClaimStatus.PENDING,
             };
 
-            _context.ContractClaims.Add(c1);
+            _context.ContractClaims.Add(claim);
 
             _context.AutoReviewRules.Add(
                 new AutoReviewRule
                 {
-                    ReviewerId = 100,
+                    ReviewerId = 10,
                     Priority = 1,
                     ComparisonVar = AutoReviewComparisonVar.HOURLY_RATE,
                     ComparisonOp = AutoReviewComparisonOp.GREATER_THAN,
-                    ComparisonValue = 50,
+                    ComparisonValue = 100,
                     AutoDecision = ClaimDecision.VERIFIED,
-                    AutoComment = "Auto OK",
+                    AutoComment = "Auto rule",
                 }
             );
 
             await _context.SaveChangesAsync();
 
-            var result = await _service.AutoReviewPendingClaimsAsync(100);
+            var result = await _service.AutoReviewPendingClaimsAsync(10);
 
             Assert.Equal(1, result.reviewed);
 

@@ -122,6 +122,21 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.ToTable("AutoReviewRules");
                 });
 
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ClaimInvoiceDocument", b =>
+                {
+                    b.Property<int>("ClaimId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UploadedFileId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ClaimId");
+
+                    b.HasIndex("UploadedFileId");
+
+                    b.ToTable("ClaimInvoiceDocument");
+                });
+
             modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ContractClaim", b =>
                 {
                     b.Property<int>("Id")
@@ -296,6 +311,25 @@ namespace ContractMonthlyClaimSystem.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ClaimInvoiceDocument", b =>
+                {
+                    b.HasOne("ContractMonthlyClaimSystem.Models.ContractClaim", "Claim")
+                        .WithMany()
+                        .HasForeignKey("ClaimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ContractMonthlyClaimSystem.Models.UploadedFile", "UploadedFile")
+                        .WithMany()
+                        .HasForeignKey("UploadedFileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Claim");
+
+                    b.Navigation("UploadedFile");
                 });
 
             modelBuilder.Entity("ContractMonthlyClaimSystem.Models.ContractClaim", b =>

@@ -1,28 +1,24 @@
-﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f5452c-2788-800b-bbbc-175029690cfd
+﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/691f16e8-5034-800b-898a-2c7eb4000f43
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using ContractMonthlyClaimSystem.Services;
 using Microsoft.Extensions.Configuration;
 
 namespace ContractMonthlyClaimSystem.Tests.Services
 {
     /// <summary>
-    /// Unit tests for the FileEncryptionService class.
-    /// Each test validates encryption, decryption, and constructor behavior.
-    /// Uses temporary in-memory and disk files to ensure correctness without side effects.
+    /// Complete test suite for FileEncryptionService.
+    /// Tests encryption, decryption, OpenDecryptedRead, constructor validation,
+    /// and error edge cases.
     /// </summary>
-    public class FileEncryptionServiceTests
+    public class FileEncryptionServiceTests : IDisposable
     {
         private readonly IConfiguration _config;
+        private readonly string _tempDir;
 
         public FileEncryptionServiceTests()
         {
-            // Build a mock configuration containing valid 32-byte key and 16-byte IV.
-            // The base64 strings correspond to 32 and 16 bytes respectively.
+            // Valid AES-256 key (32 bytes) + 16-byte IV
             var inMemorySettings = new Dictionary<string, string?>
             {
                 {
@@ -38,67 +34,149 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             };
 
             _config = new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings).Build();
+
+            _tempDir = Path.Combine(Path.GetTempPath(), $"enc_{Guid.NewGuid()}");
+            Directory.CreateDirectory(_tempDir);
         }
 
+        public void Dispose()
+        {
+            if (Directory.Exists(_tempDir))
+                Directory.Delete(_tempDir, true);
+        }
+
+        // ============================================================
+        // ENCRYPT → BASIC BEHAVIOR
+        // ============================================================
         [Fact]
         public async Task EncryptToFileAsync_CreatesEncryptedFile()
         {
-            // Arrange: create a temporary plaintext file in memory.
             var service = new FileEncryptionService(_config);
-            var plainText = "This is a test string for encryption.";
-            var inputStream = new MemoryStream(Encoding.UTF8.GetBytes(plainText));
 
-            var tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".enc");
-            try
-            {
-                // Act: perform encryption and write to disk.
-                await service.EncryptToFileAsync(inputStream, tempFile);
+            var plaintext = "This is a test.";
+            using var input = new MemoryStream(Encoding.UTF8.GetBytes(plaintext));
 
-                // Assert: file should exist and contain different bytes than plaintext.
-                Assert.True(File.Exists(tempFile));
-                var fileBytes = await File.ReadAllBytesAsync(tempFile);
-                Assert.NotEmpty(fileBytes);
-                Assert.NotEqual(Encoding.UTF8.GetBytes(plainText), fileBytes);
-            }
-            finally
-            {
-                // Cleanup: remove the temporary file.
-                File.Delete(tempFile);
-            }
+            string encPath = Path.Combine(_tempDir, "file.enc");
+
+            await service.EncryptToFileAsync(input, encPath);
+
+            Assert.True(File.Exists(encPath));
+
+            var encryptedBytes = await File.ReadAllBytesAsync(encPath);
+
+            Assert.NotEmpty(encryptedBytes);
+            Assert.NotEqual(Encoding.UTF8.GetBytes(plaintext), encryptedBytes);
         }
 
+        // ============================================================
+        // DECRYPT → MATCHES ORIGINAL
+        // ============================================================
         [Fact]
         public async Task DecryptToStreamAsync_RestoresOriginalPlainText()
         {
-            // Arrange: prepare a small plaintext message and encrypt it.
             var service = new FileEncryptionService(_config);
-            var original = "Sensitive data to be protected.";
+
+            var original = "Secret invoice data!";
             var plainStream = new MemoryStream(Encoding.UTF8.GetBytes(original));
 
-            var tempFile = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".enc");
-            try
-            {
-                await service.EncryptToFileAsync(plainStream, tempFile);
+            string encPath = Path.Combine(_tempDir, "file.enc");
 
-                // Act: decrypt the file into a memory stream.
-                var decryptedStream = new MemoryStream();
-                await service.DecryptToStreamAsync(tempFile, decryptedStream);
+            await service.EncryptToFileAsync(plainStream, encPath);
 
-                // Assert: decrypted text matches the original.
-                var result = Encoding.UTF8.GetString(decryptedStream.ToArray());
-                Assert.Equal(original, result);
-            }
-            finally
-            {
-                // Cleanup
-                File.Delete(tempFile);
-            }
+            var output = new MemoryStream();
+            await service.DecryptToStreamAsync(encPath, output);
+
+            string decrypted = Encoding.UTF8.GetString(output.ToArray());
+            Assert.Equal(original, decrypted);
         }
 
+        // ============================================================
+        // OpenDecryptedRead → STREAM VALIDATION
+        // ============================================================
+        [Fact]
+        public async Task OpenDecryptedRead_ReturnsReadableDecryptedStream()
+        {
+            var service = new FileEncryptionService(_config);
+
+            var original = "Data for streaming decrypt.";
+            var plain = new MemoryStream(Encoding.UTF8.GetBytes(original));
+
+            string encPath = Path.Combine(_tempDir, "stream.enc");
+            await service.EncryptToFileAsync(plain, encPath);
+
+            using var decryptedStream = service.OpenDecryptedRead(encPath);
+            using var mem = new MemoryStream();
+
+            await decryptedStream.CopyToAsync(mem);
+
+            string text = Encoding.UTF8.GetString(mem.ToArray());
+            Assert.Equal(original, text);
+        }
+
+        // ============================================================
+        // OpenDecryptedRead → FILE HANDLE BEHAVIOR
+        // ============================================================
+        [Fact]
+        public async Task OpenDecryptedRead_ClosesUnderlyingFileStream_WhenDisposed()
+        {
+            var service = new FileEncryptionService(_config);
+
+            var original = "Close stream test.";
+            string encPath = Path.Combine(_tempDir, "test.enc");
+
+            await service.EncryptToFileAsync(
+                new MemoryStream(Encoding.UTF8.GetBytes(original)),
+                encPath
+            );
+
+            Stream? stream = service.OpenDecryptedRead(encPath);
+            stream.Dispose(); // Force closure
+
+            // Attempt reopening file to verify handle released
+            using var reopened = File.Open(encPath, FileMode.Open, FileAccess.Read, FileShare.None);
+            Assert.NotNull(reopened);
+        }
+
+        // ============================================================
+        // MISSING FILE → DECRYPT SHOULD THROW
+        // ============================================================
+        [Fact]
+        public async Task DecryptToStreamAsync_Throws_WhenFileMissing()
+        {
+            var service = new FileEncryptionService(_config);
+
+            await Assert.ThrowsAsync<FileNotFoundException>(async () =>
+                await service.DecryptToStreamAsync(
+                    Path.Combine(_tempDir, "does_not_exist.enc"),
+                    new MemoryStream()
+                )
+            );
+        }
+
+        // ============================================================
+        // INVALID STREAM → ENCRYPT SHOULD THROW
+        // ============================================================
+        [Fact]
+        public async Task EncryptToFileAsync_Throws_WhenInputStreamDisposed()
+        {
+            var service = new FileEncryptionService(_config);
+
+            var disposedStream = new MemoryStream();
+            disposedStream.Dispose();
+
+            string encPath = Path.Combine(_tempDir, "bad.enc");
+
+            await Assert.ThrowsAsync<ObjectDisposedException>(() =>
+                service.EncryptToFileAsync(disposedStream, encPath)
+            );
+        }
+
+        // ============================================================
+        // CONSTRUCTOR VALIDATION
+        // ============================================================
         [Fact]
         public void Constructor_Throws_WhenKeyMissing()
         {
-            // Arrange: build config missing the Encryption:Key field.
             var badConfig = new ConfigurationBuilder()
                 .AddInMemoryCollection(
                     new Dictionary<string, string?>
@@ -111,7 +189,6 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 )
                 .Build();
 
-            // Act + Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 new FileEncryptionService(badConfig)
             );
@@ -121,7 +198,6 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public void Constructor_Throws_WhenIVMissing()
         {
-            // Arrange: config missing the IV.
             var badConfig = new ConfigurationBuilder()
                 .AddInMemoryCollection(
                     new Dictionary<string, string?>
@@ -136,7 +212,6 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 )
                 .Build();
 
-            // Act + Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
                 new FileEncryptionService(badConfig)
             );
@@ -146,13 +221,14 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public void Constructor_Throws_WhenKeyInvalidLength()
         {
-            // Arrange: Key is too short (16 bytes instead of 32).
-            var badKey = Convert.ToBase64String(Encoding.UTF8.GetBytes("SHORTKEY0123456"));
-            var config = new ConfigurationBuilder()
+            var badConfig = new ConfigurationBuilder()
                 .AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
-                        { "Encryption:Key", badKey },
+                        {
+                            "Encryption:Key",
+                            Convert.ToBase64String(Encoding.UTF8.GetBytes("TOO_SHORT_KEY"))
+                        },
                         {
                             "Encryption:IV",
                             Convert.ToBase64String(Encoding.UTF8.GetBytes("ABCDEF0123456789"))
@@ -161,19 +237,17 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 )
                 .Build();
 
-            // Act + Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                new FileEncryptionService(config)
+                new FileEncryptionService(badConfig)
             );
+
             Assert.Contains("Invalid Key length", ex.Message);
         }
 
         [Fact]
         public void Constructor_Throws_WhenIVInvalidLength()
         {
-            // Arrange: IV is too long.
-            var badIV = Convert.ToBase64String(Encoding.UTF8.GetBytes("TOOLONGVECTOR123456"));
-            var config = new ConfigurationBuilder()
+            var badConfig = new ConfigurationBuilder()
                 .AddInMemoryCollection(
                     new Dictionary<string, string?>
                     {
@@ -183,45 +257,19 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                                 Encoding.UTF8.GetBytes("0123456789ABCDEF0123456789ABCDEF")
                             )
                         },
-                        { "Encryption:IV", badIV },
+                        {
+                            "Encryption:IV",
+                            Convert.ToBase64String(Encoding.UTF8.GetBytes("TOO_LONG_IV_123456"))
+                        },
                     }
                 )
                 .Build();
 
-            // Act + Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                new FileEncryptionService(config)
+                new FileEncryptionService(badConfig)
             );
+
             Assert.Contains("Invalid IV length", ex.Message);
-        }
-
-        [Fact]
-        public async Task DecryptToStreamAsync_Throws_WhenFileMissing()
-        {
-            // Arrange: valid config but missing file path.
-            var service = new FileEncryptionService(_config);
-            var outputStream = new MemoryStream();
-
-            // Act + Assert: ensure FileNotFoundException is thrown.
-            await Assert.ThrowsAsync<FileNotFoundException>(() =>
-                service.DecryptToStreamAsync("nonexistent.enc", outputStream)
-            );
-        }
-
-        [Fact]
-        public async Task EncryptToFileAsync_Throws_WhenInputStreamInvalid()
-        {
-            // Arrange: create service and invalid input (disposed stream).
-            var service = new FileEncryptionService(_config);
-            var stream = new MemoryStream();
-            stream.Dispose();
-
-            var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".enc");
-
-            // Act + Assert: should fail due to invalid stream state.
-            await Assert.ThrowsAsync<ObjectDisposedException>(() =>
-                service.EncryptToFileAsync(stream, tempPath)
-            );
         }
     }
 }

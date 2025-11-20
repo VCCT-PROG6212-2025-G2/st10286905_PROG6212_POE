@@ -8,7 +8,7 @@ namespace ContractMonthlyClaimSystem.Services.Interfaces
         public Task<ContractClaim?> GetClaimAsync(int claimId);
         public Task<List<UploadedFile>?> GetClaimFilesAsync(ContractClaim claim);
         public Task<bool> ReviewClaimAsync(int claimId, int userId, bool accept, string? comment);
-        Task<(string FileName, MemoryStream FileStream, string ContentType)?> GetFileAsync(
+        Task<(Stream FileStream, string ContentType, string FileName)?> GetFileAsync(
             int fileId
         );
         public Task AddAutoReviewRuleAsync(AutoReviewRule rule);

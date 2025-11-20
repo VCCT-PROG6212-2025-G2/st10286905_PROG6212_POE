@@ -9,15 +9,13 @@ namespace ContractMonthlyClaimSystem.Services
 {
     public class LecturerClaimService(
         AppDbContext context,
-        IWebHostEnvironment env,
         IModuleService moduleService,
-        IFileEncryptionService encryptionService
+        IFileService fileService
     ) : ILecturerClaimService
     {
         private readonly AppDbContext _context = context;
-        private readonly IWebHostEnvironment _env = env;
         private readonly IModuleService _moduleService = moduleService;
-        private readonly IFileEncryptionService _encryptionService = encryptionService;
+        private readonly IFileService _fileService = fileService;
 
         public async Task<List<ContractClaim>> GetClaimsForLecturerAsync(int lecturerId) =>
             await _context
@@ -71,47 +69,26 @@ namespace ContractMonthlyClaimSystem.Services
             if (files == null || files.Count == 0)
                 return;
 
-            // AI Disclaimer: I made use of ChatGPT to assist with upload functionality. Link: https://chatgpt.com/share/68cac0b4-34b8-800b-b47c-a65ef55ad8e5
             foreach (var file in files)
             {
-                if (file.Length > 0)
+                var uploadedFile = await _fileService.UploadFileAsync(file);
+                if (uploadedFile == null)
+                    continue;
+
+                var claimDoc = new ContractClaimDocument
                 {
-                    var uploadsDir = Path.Combine(_env.WebRootPath, "uploads");
-                    Directory.CreateDirectory(uploadsDir);
-
-                    // Ensure file name is unique and sanitized/secure
-                    var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-                    var filePath = Path.Combine(uploadsDir, uniqueFileName);
-
-                    using var inputStream = file.OpenReadStream();
-                    await _encryptionService.EncryptToFileAsync(inputStream, filePath);
-
-                    var uploadedFile = new UploadedFile
-                    {
-                        FileName = file.FileName,
-                        FilePath = $"uploads/{uniqueFileName}",
-                        FileSize = file.Length,
-                        UploadedOn = DateTime.Now,
-                    };
-                    _context.UploadedFiles.Add(uploadedFile);
-                    await _context.SaveChangesAsync();
-
-                    var claimDoc = new ContractClaimDocument
-                    {
-                        ContractClaimId = claim.Id,
-                        UploadedFileId = uploadedFile.Id,
-                    };
-                    _context.ContractClaimsDocuments.Add(claimDoc);
-                }
+                    ContractClaimId = claim.Id,
+                    UploadedFileId = uploadedFile.Id,
+                };
+                _context.ContractClaimsDocuments.Add(claimDoc);
             }
             await _context.SaveChangesAsync();
         }
 
-        public async Task<(
-            string FileName,
-            MemoryStream FileStream,
-            string ContentType
-        )?> GetFileAsync(int fileId, int lecturerId)
+        public async Task<(Stream FileStream, string ContentType, string FileName)?> GetFileAsync(
+            int fileId,
+            int lecturerId
+        )
         {
             var claimDoc = await _context.ContractClaimsDocuments.FirstOrDefaultAsync(d =>
                 d.UploadedFileId == fileId
@@ -125,26 +102,7 @@ namespace ContractMonthlyClaimSystem.Services
             if (claim == null || claim.LecturerUserId != lecturerId)
                 return null;
 
-            var file = await _context.UploadedFiles.FirstOrDefaultAsync(f => f.Id == fileId);
-            if (file == null)
-                return null;
-
-            var relativePath = file.FilePath.TrimStart(
-                Path.DirectorySeparatorChar,
-                Path.AltDirectorySeparatorChar
-            );
-
-            var filePath = Path.Combine(_env.WebRootPath, relativePath);
-            if (!System.IO.File.Exists(filePath))
-                return null;
-
-            var output = new MemoryStream();
-            await _encryptionService.DecryptToStreamAsync(filePath, output);
-            output.Position = 0;
-
-            var contentType = "application/octet-stream";
-
-            return (file.FileName, output, contentType);
+            return await _fileService.GetFileAsync(fileId);
         }
     }
 }

@@ -8,11 +8,13 @@ namespace ContractMonthlyClaimSystem.Services
 {
     public class HumanResourcesService(
         AppDbContext context,
-        IReviewerClaimService reviewerClaimService
+        IReviewerClaimService reviewerClaimService,
+        IFileService fileService
     ) : IHumanResourcesService
     {
         private readonly AppDbContext _context = context;
         private readonly IReviewerClaimService _reviewerClaimService = reviewerClaimService;
+        private readonly IFileService _fileService = fileService;
 
         public async Task<LecturerDetails?> GetLecturerDetailsAsync(int id) =>
             await _context.LecturerDetails.FindAsync(id);
@@ -54,10 +56,82 @@ namespace ContractMonthlyClaimSystem.Services
                 .ContractClaims.Where(c => c.ClaimStatus == ClaimStatus.ACCEPTED)
                 .ToListAsync();
 
+        public async Task<int> ProcessApprovedClaimInvoices()
+        {
+            int ret = 0;
+
+            // Filter claims
+            var approvedClaims = await GetApprovedClaimsAsync();
+            var unprocessedClaims = approvedClaims.Except(
+                _context.ClaimInvoiceDocuments.Select(d => d.Claim)
+            );
+            if (!unprocessedClaims.Any())
+                return ret; // Nothing to process ..
+
+            foreach (var claim in unprocessedClaims)
+            {
+                var res = await GetClaimInvoicePdfAsync(claim!.Id);
+                if (res != null)
+                    ret++;
+            }
+
+            return ret;
+        }
+
+        public async Task<List<ClaimInvoiceDocument>> GetProcessedClaimInvoices() =>
+            await _context
+                .ClaimInvoiceDocuments.Include(d => d.Claim)
+                .Include(d => d.UploadedFile)
+                .ToListAsync();
+
         public async Task<(
-            string FileName,
-            MemoryStream FileStream,
-            string ContentType
+            Stream FileStream,
+            string ContentType,
+            string FileName
+        )?> GetClaimInvoicePdfAsync(int claimId)
+        {
+            var claim = await _reviewerClaimService.GetClaimAsync(claimId);
+            if (claim == null)
+                return null;
+
+            var claimInvoice = await _context.ClaimInvoiceDocuments.FindAsync(claimId);
+            if (claimInvoice != null) // Invoice exist? Immediately return the file.
+                return await _fileService.GetFileAsync(claimInvoice.UploadedFileId);
+
+            // Claim invoice does not yet exist, so generate it
+            var file = await GenerateClaimInvoicePdfAsync(claimId);
+            if (file == null)
+                return null; // Something went wrong ..
+
+            // Then save and track it
+            var uploadedFile = await _fileService.UploadFileAsync(
+                file.Value.FileStream,
+                file.Value.FileName,
+                file.Value.FileStream.Length
+            );
+            if (uploadedFile == null)
+                return null; // Something went wrong ..
+
+            // Add the ClaimInvoiceDocument entry
+            _context.ClaimInvoiceDocuments.Add(
+                new ClaimInvoiceDocument
+                {
+                    Claim = claim,
+                    ClaimId = claimId,
+                    UploadedFile = uploadedFile,
+                    UploadedFileId = uploadedFile.Id,
+                }
+            );
+            await _context.SaveChangesAsync();
+
+            // Finally return the newly generated and saved file.
+            return await _fileService.GetFileAsync(uploadedFile.Id);
+        }
+
+        public async Task<(
+            Stream FileStream,
+            string ContentType,
+            string FileName
         )?> GenerateClaimInvoicePdfAsync(int claimId)
         {
             var claim = await _reviewerClaimService.GetClaimAsync(claimId);
@@ -181,9 +255,9 @@ namespace ContractMonthlyClaimSystem.Services
             stream.Position = 0;
 
             return (
-                FileName: $"ClaimInvoice_{claim.Id}.pdf",
                 FileStream: stream,
-                ContentType: "application/pdf"
+                ContentType: "application/pdf",
+                FileName: $"ClaimInvoice_{claim.Id}.pdf"
             );
         }
     }

@@ -12,6 +12,6 @@ namespace ContractMonthlyClaimSystem.Services.Interfaces
         Task<decimal?> GetLecturerHourlyRateAsync(int lecturerId, int moduleId);
         Task<ContractClaim> CreateClaimAsync(int lecturerId, CreateClaimViewModel model);
         Task AddFilesToClaimAsync(ContractClaim claim, List<IFormFile> files);
-        Task<(string FileName, MemoryStream FileStream, string ContentType)?> GetFileAsync(int fileId, int lecturerId);
+        Task<(Stream FileStream, string ContentType, string FileName)?> GetFileAsync(int fileId, int lecturerId);
     }
 }

@@ -7,15 +7,13 @@ namespace ContractMonthlyClaimSystem.Services
 {
     public class ReviewerClaimService(
         AppDbContext context,
-        IWebHostEnvironment env,
         IUserService userService,
-        IFileEncryptionService encryptionService
+        IFileService fileService
     ) : IReviewerClaimService
     {
         private readonly AppDbContext _context = context;
-        private readonly IWebHostEnvironment _env = env;
         private readonly IUserService _userService = userService;
-        private readonly IFileEncryptionService _encryptionService = encryptionService;
+        private readonly IFileService _fileService = fileService;
 
         public async Task<List<ContractClaim>> GetClaimsAsync() =>
             await _context
@@ -130,28 +128,9 @@ namespace ContractMonthlyClaimSystem.Services
             return true;
         }
 
-        public async Task<(
-            string FileName,
-            MemoryStream FileStream,
-            string ContentType
-        )?> GetFileAsync(int fileId)
-        {
-            var file = await _context.UploadedFiles.FindAsync(fileId);
-            if (file == null)
-                return null;
-
-            var filePath = Path.Combine(_env.WebRootPath, file.FilePath);
-            if (!System.IO.File.Exists(filePath))
-                return null;
-
-            var output = new MemoryStream();
-            await _encryptionService.DecryptToStreamAsync(filePath, output);
-            output.Position = 0;
-
-            var contentType = "application/octet-stream";
-
-            return (file.FileName, output, contentType);
-        }
+        public async Task<(Stream FileStream, string ContentType, string FileName)?> GetFileAsync(
+            int fileId
+        ) => await _fileService.GetFileAsync(fileId);
 
         public async Task AddAutoReviewRuleAsync(AutoReviewRule rule)
         {
