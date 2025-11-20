@@ -5,16 +5,19 @@ using ContractMonthlyClaimSystem.Models.ViewModels;
 using ContractMonthlyClaimSystem.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ContractMonthlyClaimSystem.Controllers
 {
     [Authorize(Roles = "Admin,HR")]
-    public class ManageLecturerModulesController(IUserService userService, IModuleService moduleService)
-        : Controller
+    public class ManageLecturerModulesController(
+        IUserService userService,
+        IModuleService moduleService,
+        IHumanResourcesService hrService
+    ) : Controller
     {
         private readonly IUserService _userService = userService;
         private readonly IModuleService _moduleService = moduleService;
+        private readonly IHumanResourcesService _hrService = hrService;
 
         // Show lecturers and all modules
         public async Task<IActionResult> Index()
@@ -61,7 +64,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         }
 
         // Show all modules for a specific lecturer
-        public async Task<IActionResult> ManageLecturerModules(int id)
+        public async Task<IActionResult> ManageLecturer(int id)
         {
             var lecturer = await _userService.GetUserAsync(id);
             if (lecturer == null)
@@ -69,8 +72,9 @@ namespace ContractMonthlyClaimSystem.Controllers
 
             var allModules = await _moduleService.GetModulesAsync();
             var lecturerModules = await _moduleService.GetLecturerModulesAsync(lecturer.Id);
+            var lecturerDetails = await _hrService.GetLecturerDetailsAsync(id);
 
-            var viewModel = new ManageLecturerModulesViewModel
+            var viewModel = new ManageLecturerViewModel
             {
                 LecturerId = id,
                 LecturerName = $"{lecturer.FirstName} {lecturer.LastName}",
@@ -85,9 +89,30 @@ namespace ContractMonthlyClaimSystem.Controllers
                         HourlyRate = lm.HourlyRate,
                     }),
                 ],
+                LecturerDetails = new LecturerDetailsViewModel
+                {
+                    ContactNumber = lecturerDetails?.ContactNumber,
+                    Address = lecturerDetails?.Address,
+                    BankDetails = lecturerDetails?.BankDetails,
+                },
             };
 
             return View(viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ManageLecturerDetails(ManageLecturerViewModel model)
+        {
+            var lecturerDetails = new LecturerDetails
+            {
+                UserId = model.LecturerId,
+                ContactNumber = model.LecturerDetails.ContactNumber,
+                Address = model.LecturerDetails.Address,
+                BankDetails = model.LecturerDetails.BankDetails,
+            };
+            await _hrService.SetLecturerDetailsAsync(lecturerDetails);
+
+            return RedirectToAction(nameof(ManageLecturer), new { Id = model.LecturerId });
         }
 
         // Assign a module
@@ -99,7 +124,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         )
         {
             await _moduleService.AddLecturerModuleAsync(lecturerId, moduleId, hourlyRate);
-            return RedirectToAction(nameof(ManageLecturerModules), new { id = lecturerId });
+            return RedirectToAction(nameof(ManageLecturer), new { id = lecturerId });
         }
 
         // Remove a module
@@ -107,7 +132,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         public async Task<IActionResult> RemoveLecturerModule(int lecturerId, int moduleId)
         {
             await _moduleService.RemoveLecturerModuleAsync(lecturerId, moduleId);
-            return RedirectToAction(nameof(ManageLecturerModules), new { id = lecturerId });
+            return RedirectToAction(nameof(ManageLecturer), new { id = lecturerId });
         }
 
         // Update a lecturer module's hourly rate
@@ -119,7 +144,7 @@ namespace ContractMonthlyClaimSystem.Controllers
         )
         {
             await _moduleService.UpdateLecturerModuleHourlyRate(lecturerId, moduleId, hourlyRate);
-            return RedirectToAction(nameof(ManageLecturerModules), new { id = lecturerId });
+            return RedirectToAction(nameof(ManageLecturer), new { id = lecturerId });
         }
     }
 }

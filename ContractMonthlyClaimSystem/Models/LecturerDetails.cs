@@ -16,3 +16,4 @@ namespace ContractMonthlyClaimSystem.Models
         public string? BankDetails { get; set; }
     }
 }
+

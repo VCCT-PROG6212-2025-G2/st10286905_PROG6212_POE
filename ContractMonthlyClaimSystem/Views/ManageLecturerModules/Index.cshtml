@@ -26,7 +26,7 @@
                         <td>@lecturer.Name</td>
                         <td>@string.Join(", ", lecturer.Modules.Select(m => m.Code))</td>
                         <td>
-                            <a asp-action="ManageLecturerModules" asp-route-id="@lecturer.Id"
+                            <a asp-action="ManageLecturer" asp-route-id="@lecturer.Id"
                                class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil-square"></i> Manage Lecturer
                             </a>

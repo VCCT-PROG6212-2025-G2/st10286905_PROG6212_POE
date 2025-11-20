@@ -1,14 +1,14 @@
-﻿@model ManageLecturerModulesViewModel
+﻿@model ManageLecturerViewModel
 @* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68ca99b5-dc0c-800b-b554-c315e49df063 *@
 
 @{
-    ViewBag.Title = "Manage Lecturer Modules";
+    ViewBag.Title = "Manage Lecturer";
 }
 
 
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-primary text-white fw-bold">
-        <i class="bi bi-person-badge"></i> Manage Modules for @Model.LecturerName
+        <i class="bi bi-person-badge"></i> Lecturer Modules - @Model.LecturerName
     </div>
     <div class="card-body">
 
@@ -108,6 +108,87 @@
         {
             <p class="text-muted"><em>No available modules.</em></p>
         }
+
+
+
+    </div>
+</div>
+
+
+<!-- Manage Details -->
+@* AI Disclosure: ChatGPT Assisted in creating this. Link: https://chatgpt.com/s/t_691f4a718fc88191bac4b75d0879dd3e *@
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+        <i class="bi bi-person-lines-fill"></i> Manage Details - @Model.LecturerName
+    </div>
+
+    <div class="card-body">
+
+        <h5 class="fw-bold text-primary">
+            <i class="bi bi-person-vcard"></i> Personal Information
+        </h5>
+        <hr />
+
+        <form asp-action="ManageLecturerDetails" method="post">
+            <input type="hidden" asp-for="LecturerId" />
+
+            <div class="row g-4">
+
+                <!-- Contact + Address -->
+                <div class="col-md-6">
+                    <!-- Contact Number -->
+                    <label asp-for="LecturerDetails.ContactNumber" class="form-label fw-bold"></label>
+                    <div class="row g-0 mb-3 border rounded">
+                        <div class="col-auto bg-light border-end d-flex align-items-center p-2">
+                            <i class="bi bi-telephone"></i>
+                        </div>
+                        <div class="col">
+                            <input asp-for="LecturerDetails.ContactNumber"
+                                   class="form-control border-0 shadow-none"
+                                   placeholder="e.g. 082 123 4567" />
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <label asp-for="LecturerDetails.Address" class="form-label fw-bold"></label>
+                    <div class="row g-0 border rounded">
+                        <div class="col-auto bg-light border-end d-flex align-items-start p-2">
+                            <i class="bi bi-house fs-4"></i>
+                        </div>
+                        <div class="col">
+                            <textarea asp-for="LecturerDetails.Address"
+                                      class="form-control border-0 shadow-none"
+                                      rows="7"
+                                      placeholder="Physical address"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Details -->
+                <div class="col-md-6">
+                    <label asp-for="LecturerDetails.BankDetails" class="form-label fw-bold"></label>
+                    <div class="row g-0 border rounded">
+                        <div class="col-auto bg-light border-end d-flex align-items-start p-2">
+                            <i class="bi bi-bank fs-4"></i>
+                        </div>
+                        <div class="col">
+                            <textarea asp-for="LecturerDetails.BankDetails"
+                                      class="form-control border-0 shadow-none"
+                                      style="height: 270px"
+                                      placeholder="Bank Name&#10;Account Holder&#10;Account Number&#10;Branch Code"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="col-12 d-flex justify-content-end mt-2">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-save"></i> Save Details
+                    </button>
+                </div>
+
+            </div>
+        </form>
 
     </div>
 </div>

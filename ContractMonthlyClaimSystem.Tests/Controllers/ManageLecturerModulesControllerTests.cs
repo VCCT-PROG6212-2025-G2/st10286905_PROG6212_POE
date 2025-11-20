@@ -1,4 +1,4 @@
-﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/68f5452c-2788-800b-bbbc-175029690cfd
+﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/s/t_691f47093e18819188fef6caccbbf3d7
 
 using System.Security.Claims;
 using ContractMonthlyClaimSystem.Controllers;
@@ -16,16 +16,20 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
     {
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IModuleService> _moduleServiceMock;
+        private readonly Mock<IHumanResourcesService> _hrServiceMock;
+
         private readonly ManageLecturerModulesController _controller;
 
         public ManageLecturerModulesControllerTests()
         {
             _userServiceMock = new Mock<IUserService>();
             _moduleServiceMock = new Mock<IModuleService>();
+            _hrServiceMock = new Mock<IHumanResourcesService>();
 
             _controller = new ManageLecturerModulesController(
                 _userServiceMock.Object,
-                _moduleServiceMock.Object
+                _moduleServiceMock.Object,
+                _hrServiceMock.Object
             );
 
             var user = new ClaimsPrincipal(
@@ -80,11 +84,9 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
             _moduleServiceMock
                 .Setup(s => s.GetModulesForLecturerAsync(1))
                 .ReturnsAsync(modulesForL1);
-
             _moduleServiceMock
                 .Setup(s => s.GetModulesForLecturerAsync(2))
                 .ReturnsAsync(modulesForL2);
-
             _moduleServiceMock.Setup(s => s.GetModulesAsync()).ReturnsAsync(allModules);
 
             var result = await _controller.Index() as ViewResult;
@@ -108,10 +110,6 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                 NewModule = new Module { Id = 1, Name = "AI Systems" },
             };
 
-            _moduleServiceMock
-                .Setup(s => s.AddModuleAsync(It.IsAny<Module>()))
-                .Returns(Task.CompletedTask);
-
             var result = await _controller.CreateModule(model) as RedirectToActionResult;
 
             Assert.NotNull(result);
@@ -129,8 +127,6 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task DeleteModule_RemovesModule_AndRedirects()
         {
-            _moduleServiceMock.Setup(s => s.RemoveModuleAsync(3)).Returns(Task.CompletedTask);
-
             var result = await _controller.DeleteModule(3) as RedirectToActionResult;
 
             Assert.NotNull(result);
@@ -140,10 +136,10 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         }
 
         // ---------------------------------------------------------
-        // MANAGE LECTURER MODULES VIEW
+        // MANAGE LECTURER VIEW
         // ---------------------------------------------------------
         [Fact]
-        public async Task ManageLecturerModules_ReturnsViewWithDetailedModules()
+        public async Task ManageLecturer_ReturnsViewWithDetailedModulesAndDetails()
         {
             var lecturer = new AppUser
             {
@@ -169,39 +165,87 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
                 },
             };
 
+            var lecturerDetails = new LecturerDetails
+            {
+                UserId = 5,
+                ContactNumber = "0821234567",
+                Address = "123 Example Road",
+                BankDetails = "FNB - 123456",
+            };
+
             _userServiceMock.Setup(s => s.GetUserAsync(5)).ReturnsAsync(lecturer);
-
             _moduleServiceMock.Setup(s => s.GetModulesAsync()).ReturnsAsync(allModules);
-
             _moduleServiceMock
                 .Setup(s => s.GetLecturerModulesAsync(5))
                 .ReturnsAsync(lecturerModules);
+            _hrServiceMock.Setup(s => s.GetLecturerDetailsAsync(5)).ReturnsAsync(lecturerDetails);
 
-            var result = await _controller.ManageLecturerModules(5) as ViewResult;
+            var result = await _controller.ManageLecturer(5) as ViewResult;
 
             Assert.NotNull(result);
-            var vm = Assert.IsType<ManageLecturerModulesViewModel>(result.Model);
+            var vm = Assert.IsType<ManageLecturerViewModel>(result.Model);
 
             Assert.Equal(5, vm.LecturerId);
             Assert.Equal("Sam Williams", vm.LecturerName);
-            Assert.Equal(2, vm.AllModules.Count);
 
+            Assert.Equal(2, vm.AllModules.Count);
             Assert.Single(vm.AssignedModuleIds);
             Assert.Contains(2, vm.AssignedModuleIds);
 
             Assert.Single(vm.AssignedModulesDetailed);
             Assert.Equal(500m, vm.AssignedModulesDetailed[0].HourlyRate);
-            Assert.Equal("Networking 2B", vm.AssignedModulesDetailed[0].ModuleName);
+
+            // NEW: Verify LecturerDetails is correctly mapped
+            Assert.Equal("0821234567", vm.LecturerDetails.ContactNumber);
+            Assert.Equal("123 Example Road", vm.LecturerDetails.Address);
+            Assert.Equal("FNB - 123456", vm.LecturerDetails.BankDetails);
         }
 
         [Fact]
-        public async Task ManageLecturerModules_ReturnsNotFound_WhenLecturerMissing()
+        public async Task ManageLecturer_ReturnsNotFound_WhenLecturerMissing()
         {
             _userServiceMock.Setup(s => s.GetUserAsync(404)).ReturnsAsync((AppUser?)null);
 
-            var result = await _controller.ManageLecturerModules(404);
+            var result = await _controller.ManageLecturer(404);
 
             Assert.IsType<NotFoundResult>(result);
+        }
+
+        // ---------------------------------------------------------
+        // UPDATE LECTURER DETAILS
+        // ---------------------------------------------------------
+        [Fact]
+        public async Task ManageLecturerDetails_UpdatesDetails_AndRedirects()
+        {
+            var model = new ManageLecturerViewModel
+            {
+                LecturerId = 12,
+                LecturerDetails = new LecturerDetailsViewModel
+                {
+                    ContactNumber = "0123456789",
+                    Address = "New Address",
+                    BankDetails = "Capitec 112233",
+                },
+            };
+
+            var result = await _controller.ManageLecturerDetails(model) as RedirectToActionResult;
+
+            Assert.NotNull(result);
+            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturer), result.ActionName);
+            Assert.Equal(12, result.RouteValues!["Id"]);
+
+            _hrServiceMock.Verify(
+                s =>
+                    s.SetLecturerDetailsAsync(
+                        It.Is<LecturerDetails>(d =>
+                            d.UserId == 12
+                            && d.ContactNumber == "0123456789"
+                            && d.Address == "New Address"
+                            && d.BankDetails == "Capitec 112233"
+                        )
+                    ),
+                Times.Once
+            );
         }
 
         // ---------------------------------------------------------
@@ -210,15 +254,13 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task AddLecturerModule_AssignsModule_AndRedirects()
         {
-            _moduleServiceMock
-                .Setup(s => s.AddLecturerModuleAsync(10, 7, 250m))
-                .Returns(Task.CompletedTask);
-
             var result = await _controller.AddLecturerModule(10, 7, 250m) as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturerModules), result.ActionName);
+            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturer), result.ActionName);
             Assert.Equal(10, result.RouteValues!["id"]);
+
+            _moduleServiceMock.Verify(s => s.AddLecturerModuleAsync(10, 7, 250m), Times.Once);
         }
 
         // ---------------------------------------------------------
@@ -227,15 +269,13 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task RemoveLecturerModule_RemovesModule_AndRedirects()
         {
-            _moduleServiceMock
-                .Setup(s => s.RemoveLecturerModuleAsync(10, 7))
-                .Returns(Task.CompletedTask);
-
             var result = await _controller.RemoveLecturerModule(10, 7) as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturerModules), result.ActionName);
+            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturer), result.ActionName);
             Assert.Equal(10, result.RouteValues!["id"]);
+
+            _moduleServiceMock.Verify(s => s.RemoveLecturerModuleAsync(10, 7), Times.Once);
         }
 
         // ---------------------------------------------------------
@@ -244,16 +284,12 @@ namespace ContractMonthlyClaimSystem.Tests.Controllers
         [Fact]
         public async Task UpdateLecturerModuleHourlyRate_UpdatesAndRedirects()
         {
-            _moduleServiceMock
-                .Setup(s => s.UpdateLecturerModuleHourlyRate(10, 7, 800m))
-                .Returns(Task.CompletedTask);
-
             var result =
                 await _controller.UpdateLecturerModuleHourlyRate(10, 7, 800m)
                 as RedirectToActionResult;
 
             Assert.NotNull(result);
-            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturerModules), result.ActionName);
+            Assert.Equal(nameof(ManageLecturerModulesController.ManageLecturer), result.ActionName);
             Assert.Equal(10, result.RouteValues!["id"]);
 
             _moduleServiceMock.Verify(
