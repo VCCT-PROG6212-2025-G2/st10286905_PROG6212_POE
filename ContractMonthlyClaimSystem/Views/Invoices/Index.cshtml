@@ -1,0 +1,132 @@
+﻿@* AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/691f3f5d-da10-800b-9e16-9bf0709a73e0 *@
+
+@model InvoicesIndexViewModel
+
+@{
+    ViewData["Title"] = "Invoices";
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Action Buttons -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+
+    <!-- Process All Invoices -->
+    <form asp-action="ProcessAllInvoices" method="post" class="m-0">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-file-earmark-plus"></i> Process All Invoices
+        </button>
+    </form>
+
+    <!-- Run Auto Review Rules -->
+    <form asp-action="RunAutoReview" method="post" class="m-0">
+        <button type="submit" class="btn btn-warning text-white">
+            <i class="bi bi-lightning"></i> Run Auto Review
+        </button>
+    </form>
+
+</div>
+
+<!-- Approved Claims -->
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white fw-bold">
+        <i class="bi bi-check-circle"></i> Approved Claims (Invoice Generation)
+    </div>
+    <div class="card-body">
+        @if (Model.ApprovedClaims.Any())
+        {
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Lecturer</th>
+                        <th>Module</th>
+                        <th>Payment Amount</th>
+                        <th>Program Coordinator</th>
+                        <th>Academic Manager</th>
+                        <th>Status</th>
+                        <th>Invoice</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var claim in Model.ApprovedClaims)
+                    {
+                        <tr>
+                            <td>@claim.LecturerName</td>
+                            <td>@claim.ModuleName</td>
+                            <td class="fw-semibold">@claim.PaymentAmount.ToString("R0.00")</td>
+
+                            <td>
+                                <span class="badge @claim.ProgramCoordinatorDecision.ToBgClass()">
+                                    @claim.ProgramCoordinatorDecision
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="badge @claim.AcademicManagerDecision.ToBgClass()">
+                                    @claim.AcademicManagerDecision
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="badge @claim.ClaimStatus.ToBgClass()">
+                                    @claim.ClaimStatus
+                                </span>
+                            </td>
+
+                            <td class="fw-semibold">
+                                @if (!string.IsNullOrEmpty(claim.InvoiceFileName))
+                                {
+                                    <span class="text-success">
+                                        <i class="bi bi-file-earmark-pdf"></i> @claim.InvoiceFileName
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted"><em>No invoice</em></span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrEmpty(claim.InvoiceFileName))
+                                {
+                                    <a asp-action="DownloadInvoice"
+                                       asp-route-claimId="@claim.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download"></i> Download
+                                    </a>
+                                }
+                                else
+                                {
+                                    <form asp-action="ProcessInvoice" method="post" class="d-inline">
+                                        <input type="hidden" name="claimId" value="@claim.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-gear"></i> Generate
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-muted"><em>No approved claims available for invoice processing.</em></p>
+        }
+    </div>
+</div>

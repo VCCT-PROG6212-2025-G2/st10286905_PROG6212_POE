@@ -6,10 +6,10 @@ namespace ContractMonthlyClaimSystem.Services.Interfaces
     {
         public Task<LecturerDetails?> GetLecturerDetailsAsync(int id);
         public Task SetLecturerDetailsAsync(LecturerDetails details);
-        public Task AutoReviewClaimsForReviewersAsync();
+        public Task<int> AutoReviewClaimsForReviewersAsync();
         public Task<List<ContractClaim>> GetApprovedClaimsAsync();
-        public Task<int> ProcessApprovedClaimInvoices();
-        public Task<List<ClaimInvoiceDocument>> GetProcessedClaimInvoices();
+        public Task<int> ProcessApprovedClaimInvoicesAsync();
+        public Task<List<ClaimInvoiceDocument>> GetProcessedClaimInvoicesAsync();
         public Task<(Stream FileStream, string ContentType, string FileName)?> GetClaimInvoicePdfAsync(int claimId);
         public Task<(Stream FileStream, string ContentType, string FileName)?> GenerateClaimInvoicePdfAsync(int claimId);
     }

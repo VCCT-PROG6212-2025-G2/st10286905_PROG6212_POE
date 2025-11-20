@@ -13,6 +13,7 @@ namespace ContractMonthlyClaimSystem.Services
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<ILecturerClaimService, LecturerClaimService>();
             services.AddScoped<IReviewerClaimService, ReviewerClaimService>();
+            services.AddScoped<IHumanResourcesService, HumanResourcesService>();
             services.AddScoped<IModuleService, ModuleService>();
             services.AddScoped<IRoleService, RoleService>();
         }

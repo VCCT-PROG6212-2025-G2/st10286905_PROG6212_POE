@@ -41,22 +41,30 @@ namespace ContractMonthlyClaimSystem.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task AutoReviewClaimsForReviewersAsync()
+        public async Task<int> AutoReviewClaimsForReviewersAsync()
         {
+            var reviewed = 0;
+
             var reviewerIds = await _context
                 .AutoReviewRules.Select(arr => arr.ReviewerId)
                 .ToListAsync();
 
             foreach (var reviewerId in reviewerIds)
-                await _reviewerClaimService.AutoReviewPendingClaimsAsync(reviewerId);
+                reviewed += (await _reviewerClaimService.AutoReviewPendingClaimsAsync(reviewerId)).reviewed;
+
+            return reviewed;
         }
 
         public async Task<List<ContractClaim>> GetApprovedClaimsAsync() =>
             await _context
-                .ContractClaims.Where(c => c.ClaimStatus == ClaimStatus.ACCEPTED)
+                .ContractClaims.Include(c => c.LecturerUser)
+                .Include(c => c.Module)
+                .Include(c => c.AcademicManagerUser)
+                .Include(c => c.ProgramCoordinatorUser)
+                .Where(c => c.ClaimStatus == ClaimStatus.ACCEPTED)
                 .ToListAsync();
 
-        public async Task<int> ProcessApprovedClaimInvoices()
+        public async Task<int> ProcessApprovedClaimInvoicesAsync()
         {
             int ret = 0;
 
@@ -78,7 +86,7 @@ namespace ContractMonthlyClaimSystem.Services
             return ret;
         }
 
-        public async Task<List<ClaimInvoiceDocument>> GetProcessedClaimInvoices() =>
+        public async Task<List<ClaimInvoiceDocument>> GetProcessedClaimInvoicesAsync() =>
             await _context
                 .ClaimInvoiceDocuments.Include(d => d.Claim)
                 .Include(d => d.UploadedFile)

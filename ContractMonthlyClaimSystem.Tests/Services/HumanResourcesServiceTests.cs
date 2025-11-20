@@ -76,10 +76,10 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         }
 
         // =======================================================
-        // AUTO REVIEW CLAIMS
+        // AUTO REVIEW CLAIMS FOR REVIEWERS
         // =======================================================
         [Fact]
-        public async Task AutoReviewClaimsForReviewersAsync_CallsReviewerService()
+        public async Task AutoReviewClaimsForReviewersAsync_CallsReviewerService_AndSumsReviewed()
         {
             _context.AutoReviewRules.Add(new AutoReviewRule { ReviewerId = 1 });
             _context.AutoReviewRules.Add(new AutoReviewRule { ReviewerId = 2 });
@@ -88,11 +88,14 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             _reviewerMock
                 .Setup(r => r.AutoReviewPendingClaimsAsync(1))
                 .ReturnsAsync((pending: 5, reviewed: 3));
+
             _reviewerMock
                 .Setup(r => r.AutoReviewPendingClaimsAsync(2))
                 .ReturnsAsync((pending: 2, reviewed: 2));
 
-            await _service.AutoReviewClaimsForReviewersAsync();
+            var result = await _service.AutoReviewClaimsForReviewersAsync();
+
+            Assert.Equal(5, result); // 3 + 2 reviewed
 
             _reviewerMock.Verify(r => r.AutoReviewPendingClaimsAsync(1), Times.Once);
             _reviewerMock.Verify(r => r.AutoReviewPendingClaimsAsync(2), Times.Once);
@@ -102,20 +105,46 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         // GET APPROVED CLAIMS
         // =======================================================
         [Fact]
-        public async Task GetApprovedClaimsAsync_ReturnsOnlyAccepted()
+        public async Task GetApprovedClaimsAsync_ReturnsOnlyAccepted_WithIncludes()
         {
+            var m = new Module { Name = "M", Code = "C" };
+            var u = new AppUser { Id = 10, UserName = "lect" };
+
+            _context.Modules.Add(m);
+            _context.Users.Add(u);
+
             _context.ContractClaims.Add(
-                new ContractClaim { Id = 1, ClaimStatus = ClaimStatus.ACCEPTED }
+                new ContractClaim
+                {
+                    Id = 1,
+                    ClaimStatus = ClaimStatus.ACCEPTED,
+                    LecturerUserId = u.Id,
+                    LecturerUser = u,
+                    Module = m,
+                    ModuleId = m.Id,
+                }
             );
+
             _context.ContractClaims.Add(
-                new ContractClaim { Id = 2, ClaimStatus = ClaimStatus.REJECTED }
+                new ContractClaim
+                {
+                    Id = 2,
+                    ClaimStatus = ClaimStatus.REJECTED,
+                    LecturerUserId = u.Id,
+                    LecturerUser = u,
+                    Module = m,
+                    ModuleId = m.Id,
+                }
             );
+
             await _context.SaveChangesAsync();
 
             var result = await _service.GetApprovedClaimsAsync();
 
             Assert.Single(result);
             Assert.Equal(1, result.First().Id);
+            Assert.NotNull(result.First().LecturerUser);
+            Assert.NotNull(result.First().Module);
         }
 
         // =======================================================
@@ -124,7 +153,14 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public async Task GetProcessedClaimInvoices_ReturnsInvoicesWithIncludes()
         {
-            var claim = new ContractClaim { Id = 10, ClaimStatus = ClaimStatus.ACCEPTED };
+            var claim = new ContractClaim
+            {
+                Id = 10,
+                ClaimStatus = ClaimStatus.ACCEPTED,
+                LecturerUserId = 1,
+                LecturerUser = new AppUser(),
+                Module = new Module { Name = "M", Code = "C" },
+            };
 
             var file = new UploadedFile
             {
@@ -145,10 +181,10 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             _context.ClaimInvoiceDocuments.Add(doc);
             await _context.SaveChangesAsync();
 
-            var result = await _service.GetProcessedClaimInvoices();
+            var result = await _service.GetProcessedClaimInvoicesAsync();
 
             Assert.Single(result);
-            Assert.Equal("inv.pdf", result.First().UploadedFile.FileName);
+            Assert.Equal("inv.pdf", result.First().UploadedFile!.FileName);
         }
 
         // =======================================================
@@ -157,20 +193,26 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public async Task ProcessApprovedClaimInvoices_ReturnsZero_WhenNoneToProcess()
         {
-            var claim = new ContractClaim { Id = 1, ClaimStatus = ClaimStatus.ACCEPTED };
+            var claim = new ContractClaim
+            {
+                Id = 1,
+                ClaimStatus = ClaimStatus.ACCEPTED,
+                Module = new Module { Name = "M", Code = "C" },
+            };
 
             _context.ContractClaims.Add(claim);
             _context.ClaimInvoiceDocuments.Add(
                 new ClaimInvoiceDocument
                 {
-                    ClaimId = claim.Id,
+                    ClaimId = 1,
                     Claim = claim,
                     UploadedFileId = 99,
                 }
             );
+
             await _context.SaveChangesAsync();
 
-            var result = await _service.ProcessApprovedClaimInvoices();
+            var result = await _service.ProcessApprovedClaimInvoicesAsync();
 
             Assert.Equal(0, result);
         }
@@ -178,43 +220,34 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public async Task ProcessApprovedClaimInvoices_GeneratesInvoices()
         {
-            _context.ContractClaims.Add(
-                new ContractClaim
-                {
-                    Id = 1,
-                    ClaimStatus = ClaimStatus.ACCEPTED,
-                    LecturerUserId = 1,
-                    LecturerUser = new AppUser(),
-                    Module = new Module { Name = "M1", Code = "M101" },
-                    HoursWorked = 2,
-                    HourlyRate = 100,
-                }
-            );
+            var c1 = new ContractClaim
+            {
+                Id = 1,
+                ClaimStatus = ClaimStatus.ACCEPTED,
+                LecturerUserId = 1,
+                LecturerUser = new AppUser(),
+                Module = new Module { Name = "M1", Code = "C1" },
+                HoursWorked = 2,
+                HourlyRate = 100,
+            };
 
-            _context.ContractClaims.Add(
-                new ContractClaim
-                {
-                    Id = 2,
-                    ClaimStatus = ClaimStatus.ACCEPTED,
-                    LecturerUserId = 1,
-                    LecturerUser = new AppUser(),
-                    Module = new Module { Name = "M2", Code = "M202" },
-                    HoursWorked = 3,
-                    HourlyRate = 200,
-                }
-            );
+            var c2 = new ContractClaim
+            {
+                Id = 2,
+                ClaimStatus = ClaimStatus.ACCEPTED,
+                LecturerUserId = 1,
+                LecturerUser = new AppUser(),
+                Module = new Module { Name = "M2", Code = "C2" },
+                HoursWorked = 3,
+                HourlyRate = 200,
+            };
 
+            _context.ContractClaims.AddRange(c1, c2);
             await _context.SaveChangesAsync();
 
             _reviewerMock
                 .Setup(r => r.GetClaimAsync(It.IsAny<int>()))
                 .ReturnsAsync((int id) => _context.ContractClaims.Find(id)!);
-
-            var fakePdf = (
-                FileStream: (Stream)new MemoryStream(new byte[] { 1, 2, 3 }),
-                ContentType: "application/pdf",
-                FileName: "gen.pdf"
-            );
 
             _fileMock
                 .Setup(f =>
@@ -230,16 +263,22 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                     }
                 );
 
+            var fakePdf = (
+                FileStream: (Stream)new MemoryStream(new byte[] { 1, 2, 3 }),
+                ContentType: "application/pdf",
+                FileName: "gen.pdf"
+            );
+
             _fileMock.Setup(f => f.GetFileAsync(99)).ReturnsAsync(fakePdf);
 
-            var result = await _service.ProcessApprovedClaimInvoices();
+            var result = await _service.ProcessApprovedClaimInvoicesAsync();
 
             Assert.Equal(2, result);
             Assert.Equal(2, _context.ClaimInvoiceDocuments.Count());
         }
 
         // =======================================================
-        // GET CLAIM INVOICE PDF — NULLS
+        // GET CLAIM INVOICE PDF
         // =======================================================
         [Fact]
         public async Task GetClaimInvoicePdfAsync_ReturnsNull_WhenClaimNotFound()
@@ -254,7 +293,11 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public async Task GetClaimInvoicePdfAsync_ReturnsExisting_WhenInvoiceAlreadyCreated()
         {
-            var claim = new ContractClaim { Id = 10 };
+            var claim = new ContractClaim
+            {
+                Id = 10,
+                Module = new Module { Name = "M", Code = "C" },
+            };
             var file = new UploadedFile
             {
                 Id = 777,
@@ -291,7 +334,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         }
 
         // =======================================================
-        // GET CLAIM INVOICE PDF — GENERATE IF NOT EXIST
+        // GENERATE INVOICE IF NOT EXISTING
         // =======================================================
         [Fact]
         public async Task GetClaimInvoicePdfAsync_GeneratesAndSaves_WhenNotExisting()
@@ -309,7 +352,6 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             _context.ContractClaims.Add(claim);
             _context.LecturerDetails.Add(new LecturerDetails { UserId = 1, ContactNumber = "123" });
-
             await _context.SaveChangesAsync();
 
             _reviewerMock.Setup(r => r.GetClaimAsync(10)).ReturnsAsync(claim);
@@ -344,7 +386,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         }
 
         // =======================================================
-        // GENERATE PDF — NULL CASES
+        // GENERATE CLAIM INVOICE PDF
         // =======================================================
         [Fact]
         public async Task GenerateClaimInvoicePdfAsync_ReturnsNull_WhenClaimNotAccepted()
@@ -356,12 +398,10 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 );
 
             var result = await _service.GenerateClaimInvoicePdfAsync(7);
+
             Assert.Null(result);
         }
 
-        // =======================================================
-        // GENERATE PDF — SUCCESS
-        // =======================================================
         [Fact]
         public async Task GenerateClaimInvoicePdfAsync_ReturnsPdf_WhenAccepted()
         {
@@ -393,8 +433,8 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             Assert.NotNull(result);
             Assert.Equal("application/pdf", result!.Value.ContentType);
-            Assert.EndsWith(".pdf", result.Value.FileName);
             Assert.True(result.Value.FileStream.Length > 0);
+            Assert.EndsWith(".pdf", result.Value.FileName);
         }
     }
 }

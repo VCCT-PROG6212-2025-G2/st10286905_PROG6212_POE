@@ -49,6 +49,12 @@
                             @if (User.IsInRole("Admin") || User.IsInRole("HR"))
                             {
                                 <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Invoices" asp-action="Index">Invoices</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Admin") || User.IsInRole("HR"))
+                            {
+                                <li class="nav-item">
                                     <a class="nav-link" asp-area="" asp-controller="ManageLecturerModules" asp-action="Index">Manage Lecturers & Modules</a>
                                 </li>
                             }
