@@ -16,7 +16,8 @@
                 <tr>
                     <th>Name</th>
                     <th>Modules</th>
-                    <th></th>
+                    <th>Contact Number</th>
+                    <th class="text-end"></th>
                 </tr>
             </thead>
             <tbody>
@@ -25,7 +26,8 @@
                     <tr>
                         <td>@lecturer.Name</td>
                         <td>@string.Join(", ", lecturer.Modules.Select(m => m.Code))</td>
-                        <td>
+                        <td>@lecturer.ContactNumber</td>
+                        <td class="text-end">
                             <a asp-action="ManageLecturer" asp-route-id="@lecturer.Id"
                                class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil-square"></i> Manage Lecturer
@@ -58,7 +60,7 @@
                     <tr>
                         <td>@module.Name</td>
                         <td>@module.Code</td>
-                        <td>
+                        <td class="text-end">
                             <form asp-action="DeleteModule" method="post" class="d-inline">
                                 <input type="hidden" name="id" value="@module.Id" />
                                 <button type="submit" class="btn btn-sm btn-outline-danger">

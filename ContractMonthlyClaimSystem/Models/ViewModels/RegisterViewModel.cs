@@ -1,5 +1,6 @@
 ﻿// AI Disclosure: ChatGPT assisted in creating this. Link: https://chatgpt.com/share/6911f8f7-a06c-800b-a7aa-9d3ef0330f8c
 
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System.ComponentModel.DataAnnotations;
 
 namespace ContractMonthlyClaimSystem.Models.ViewModels
@@ -14,6 +15,12 @@ namespace ContractMonthlyClaimSystem.Models.ViewModels
         [DataType(DataType.Password)]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters.")]
         public string Password { get; set; } = string.Empty;
+
+        [Required]
+        [DataType(DataType.Password)]
+        [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
+        [Display(Name = "Confirm Password")]
+        public string ConfirmPassword { get; set; } = string.Empty;
 
         [DataType(DataType.EmailAddress)]
         [EmailAddress(ErrorMessage = "Invalid email format.")]

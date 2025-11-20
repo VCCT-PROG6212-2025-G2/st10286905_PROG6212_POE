@@ -26,6 +26,12 @@
                 </div>
 
                 <div class="form-floating mb-3">
+                    <input asp-for="ConfirmPassword" class="form-control" placeholder="Password" />
+                    <label asp-for="ConfirmPassword"></label>
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+
+                <div class="form-floating mb-3">
                     <input asp-for="Email" class="form-control" placeholder="Email" />
                     <label asp-for="Email"></label>
                     <span asp-validation-for="Email" class="text-danger"></span>

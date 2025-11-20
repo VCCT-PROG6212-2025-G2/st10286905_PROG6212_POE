@@ -22,9 +22,10 @@
             <table class="table table-hover align-middle table-striped mb-4">
                 <thead class="table-light">
                     <tr>
-                        <th>Module</th>
+                        <th>Name</th>
+                        <th>Code</th>
                         <th>Hourly Rate (R)</th>
-                        <th style="width: 150px;">Actions</th>
+                        <th class="text-end pe-4">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -32,6 +33,7 @@
                     {
                         <tr>
                             <td>@m.ModuleName</td>
+                            <td>@m.ModuleCode</td>
                             <td>
                                 <form asp-action="UpdateLecturerModuleHourlyRate" method="post" class="d-flex">
                                     <input type="hidden" name="lecturerId" value="@Model.LecturerId" />
@@ -46,11 +48,11 @@
                                 </form>
                             </td>
 
-                            <td>
+                            <td class="text-end">
                                 <form asp-action="RemoveLecturerModule" method="post">
                                     <input type="hidden" name="lecturerId" value="@Model.LecturerId" />
                                     <input type="hidden" name="moduleId" value="@m.ModuleId" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-x-circle"></i> Remove
                                     </button>
                                 </form>
@@ -75,8 +77,9 @@
             <table class="table table-hover align-middle table-striped">
                 <thead class="table-light">
                     <tr>
-                        <th>Module</th>
-                        <th style="width: 120px;">Action</th>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th class="text-end pe-4">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -84,13 +87,14 @@
                     {
                         <tr>
                             <td>@module.Name</td>
-                            <td>
-                                <form asp-action="AddLecturerModule" method="post" class="d-flex">
+                            <td>@module.Code</td>
+                            <td class="text-end">
+                                <form asp-action="AddLecturerModule" method="post" class="d-inline-flex">
                                     <input type="hidden" name="lecturerId" value="@Model.LecturerId" />
                                     <input type="hidden" name="moduleId" value="@module.Id" />
 
                                     <input type="number" name="hourlyRate" step="0.01"
-                                           placeholder="Rate"
+                                           placeholder="Rate R/Hr"
                                            class="form-control form-control-sm me-2"
                                            style="width:100px;" />
 

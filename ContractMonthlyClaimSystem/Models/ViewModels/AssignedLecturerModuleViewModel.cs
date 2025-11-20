@@ -4,6 +4,7 @@
     {
         public int ModuleId { get; set; }
         public string ModuleName { get; set; } = string.Empty;
+        public string ModuleCode { get; set; } = string.Empty;
         public decimal HourlyRate { get; set; }
     }
 }

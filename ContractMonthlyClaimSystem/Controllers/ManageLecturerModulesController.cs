@@ -33,6 +33,9 @@ namespace ContractMonthlyClaimSystem.Controllers
                         Id = lecturer.Id,
                         Name = $"{lecturer.FirstName} {lecturer.LastName}",
                         Modules = await _moduleService.GetModulesForLecturerAsync(lecturer.Id),
+                        ContactNumber =
+                            (await _hrService.GetLecturerDetailsAsync(lecturer.Id))?.ContactNumber
+                            ?? "Missing",
                     }
                 );
             }
@@ -86,6 +89,7 @@ namespace ContractMonthlyClaimSystem.Controllers
                     {
                         ModuleId = lm.ModuleId,
                         ModuleName = lm.Module.Name,
+                        ModuleCode = lm.Module.Code,
                         HourlyRate = lm.HourlyRate,
                     }),
                 ],
