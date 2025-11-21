@@ -50,7 +50,9 @@ namespace ContractMonthlyClaimSystem.Services
                 .ToListAsync();
 
             foreach (var reviewerId in reviewerIds)
-                reviewed += (await _reviewerClaimService.AutoReviewPendingClaimsAsync(reviewerId)).reviewed;
+                reviewed += (
+                    await _reviewerClaimService.AutoReviewPendingClaimsAsync(reviewerId)
+                ).reviewed;
 
             return reviewed;
         }
@@ -103,8 +105,21 @@ namespace ContractMonthlyClaimSystem.Services
                 return null;
 
             var claimInvoice = await _context.ClaimInvoiceDocuments.FindAsync(claimId);
-            if (claimInvoice != null) // Invoice exist? Immediately return the file.
-                return await _fileService.GetFileAsync(claimInvoice.UploadedFileId);
+            if (claimInvoice != null)
+            { // Invoice exists..
+                var existingFile = await _fileService.GetFileAsync(claimInvoice.UploadedFileId);
+                if (existingFile != null) // File exist? Immediately return the file.
+                    return existingFile;
+
+                // If we get here, the file no longer exists or is unreadable.
+                var existingUploadedFile = await _context.UploadedFiles.FindAsync(claimInvoice.UploadedFileId);
+                // Remove the existingUploadedFile from the database if it exists
+                if (existingUploadedFile != null)
+                    _context.UploadedFiles.Remove(existingUploadedFile);
+                // Remove claimInvoice from database, since the file it points to was invalid.
+                _context.ClaimInvoiceDocuments.Remove(claimInvoice);
+                await _context.SaveChangesAsync();
+            }
 
             // Claim invoice does not yet exist, so generate it
             var file = await GenerateClaimInvoicePdfAsync(claimId);
