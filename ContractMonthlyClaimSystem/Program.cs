@@ -26,6 +26,19 @@ internal class Program
         // Add our custom services
         builder.Services.AddApplicationServices();
 
+        
+        // Add session 
+        builder.Services.AddDistributedMemoryCache();// Required to store session data in memory
+        builder.Services.AddSession(options =>
+        {
+            options.IdleTimeout = TimeSpan.FromHours(12);
+            options.Cookie.HttpOnly = true;
+            options.Cookie.IsEssential = true; // required for GDPR compliance
+        });
+
+        // Needed to access HttpContext in views/controllers/services
+        builder.Services.AddHttpContextAccessor();
+
         // Add auth
         builder
             .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -56,6 +69,9 @@ internal class Program
         app.UseStaticFiles();
 
         app.UseRouting();
+
+        // Use session
+        app.UseSession();
 
         // Use auth
         app.UseAuthentication();

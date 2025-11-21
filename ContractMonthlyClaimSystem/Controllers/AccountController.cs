@@ -30,7 +30,12 @@ namespace ContractMonthlyClaimSystem.Controllers
             var principal = _userService.BuildClaimsPrincipal(user);
             await HttpContext.SignInAsync(principal);
 
-            TempData["Success"] = $"Welcome back, {(user.FirstName + user.LastName) ?? user.UserName}!";
+            HttpContext.Session.SetString("username", user.UserName);
+            HttpContext.Session.SetInt32("uid", user.Id);
+            HttpContext.Session.SetString("FullName", $"{user.FirstName} {user.LastName}");
+
+            TempData["Success"] =
+                $"Welcome back, {(user.FirstName + " " + user.LastName) ?? user.UserName}!";
 
             // Redirect to ReturnUrl if provided, otherwise Home
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
@@ -69,8 +74,12 @@ namespace ContractMonthlyClaimSystem.Controllers
             var principal = _userService.BuildClaimsPrincipal(user);
             await HttpContext.SignInAsync(principal);
 
+            HttpContext.Session.SetString("username", user.UserName);
+            HttpContext.Session.SetInt32("uid", user.Id);
+            HttpContext.Session.SetString("FullName", $"{user.FirstName} {user.LastName}");
+
             TempData["Success"] =
-                $"Welcome, {(user.FirstName + user.LastName) ?? user.UserName}! Your account has been created.";
+                $"Welcome, {(user.FirstName + " " + user.LastName) ?? user.UserName}! Your account has been created.";
             return RedirectToAction("Index", "Home");
         }
 
@@ -78,11 +87,23 @@ namespace ContractMonthlyClaimSystem.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync();
+            HttpContext.Session.Clear();
             TempData["Success"] = "You have been signed out successfully.";
             return RedirectToAction(nameof(Login));
         }
 
-        public IActionResult AccessDenied() => View();
+        public IActionResult AccessDenied()
+        {
+            var user = _userService.GetUser(User);
+            if (user != null)
+            {
+                HttpContext.Session.SetString("username", user.UserName);
+                HttpContext.Session.SetInt32("uid", user.Id);
+                HttpContext.Session.SetString("FullName", $"{user.FirstName} {user.LastName}");
+            }
+
+            return View();
+        }
 
         [Authorize]
         public async Task<IActionResult> Manage()
@@ -90,6 +111,10 @@ namespace ContractMonthlyClaimSystem.Controllers
             var user = await _userService.GetUserAsync(User.Identity?.Name);
             if (user == null)
                 return RedirectToAction(nameof(Login));
+
+            HttpContext.Session.SetString("username", user.UserName);
+            HttpContext.Session.SetInt32("uid", user.Id);
+            HttpContext.Session.SetString("FullName", $"{user.FirstName} {user.LastName}");
 
             return View(
                 new ManageAccountViewModel

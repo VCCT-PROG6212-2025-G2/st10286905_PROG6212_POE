@@ -1,12 +1,34 @@
-﻿@{
+﻿@inject IHttpContextAccessor ctx
+
+@{
     ViewData["Title"] = "Home Page";
 }
 
 <div class="text-center">
-    
-    @if (User.Identity.IsAuthenticated)
+    <h1 class="display-4">@(User.Identity?.IsAuthenticated == true ? $"Hello, {@ctx.HttpContext?.Session.GetString("FullName")}" : "Welcome")</h1>
+
+    @if (TempData["Error"] != null || TempData["Success"] != null)
     {
-        <h1 class="display-4">Welcome, @User.Identity.Name</h1>
+        <div class="mx-auto" style="max-width: 420px;">
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+        </div>
+    }
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
         if (User.IsInRole("Admin") || User.IsInRole("Lecturer") || User.IsInRole("ProgramCoordinator") || User.IsInRole("AcademicManager") || User.IsInRole("HR"))
         {
             <p>Use the navigation bar to access your dashboard.</p>
@@ -18,7 +40,6 @@
     }
     else
     {
-        <h1 class="display-4">Welcome</h1>
         <p>Login to access application functionality.</p>
     }
 </div>
