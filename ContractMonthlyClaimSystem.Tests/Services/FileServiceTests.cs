@@ -212,5 +212,101 @@ namespace ContractMonthlyClaimSystem.Tests.Services
 
             Assert.Null(result);
         }
+
+        // -------------------------------------------------------------
+        // DeleteFileAsync
+        // -------------------------------------------------------------
+        [Fact]
+        public async Task DeleteFileAsync_ReturnsFalse_WhenFileNotFoundInDb()
+        {
+            var result = await _service.DeleteFileAsync(999);
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task DeleteFileAsync_DeletesPhysicalFile_AndRemovesDbRecord()
+        {
+            // Arrange DB record
+            var file = new UploadedFile
+            {
+                FileName = "gone.txt",
+                FilePath = "uploads/gone.txt",
+                FileSize = 10
+            };
+
+            _context.UploadedFiles.Add(file);
+            await _context.SaveChangesAsync();
+
+            // Arrange physical file
+            var fullPath = Path.Combine(_root, "uploads", "gone.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            File.WriteAllBytes(fullPath, new byte[] { 1, 2, 3 });
+
+            // Act
+            var result = await _service.DeleteFileAsync(file.Id);
+
+            // Assert
+            Assert.True(result);
+            Assert.False(File.Exists(fullPath));
+            Assert.Empty(_context.UploadedFiles);
+        }
+
+        [Fact]
+        public async Task DeleteFileAsync_ReturnsTrue_WhenFileDoesNotExistPhysically()
+        {
+            // Arrange DB record
+            var file = new UploadedFile
+            {
+                FileName = "nofile.txt",
+                FilePath = "uploads/nofile.txt",
+                FileSize = 10
+            };
+
+            _context.UploadedFiles.Add(file);
+            await _context.SaveChangesAsync();
+
+            // Physical file intentionally not created
+
+            // Act
+            var result = await _service.DeleteFileAsync(file.Id);
+
+            // Assert
+            Assert.True(result);
+            Assert.Empty(_context.UploadedFiles);
+        }
+
+        [Fact]
+        public async Task DeleteFileAsync_RestoresDbRecord_WhenPhysicalDeleteFails()
+        {
+            // Arrange DB record
+            var file = new UploadedFile
+            {
+                FileName = "fail.txt",
+                FilePath = "uploads/fail.txt",
+                FileSize = 10
+            };
+
+            _context.UploadedFiles.Add(file);
+            await _context.SaveChangesAsync();
+
+            var fullPath = Path.Combine(_root, "uploads", "fail.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            File.WriteAllBytes(fullPath, new byte[] { 1, 2, 3 });
+
+            bool result;
+
+            using (var lockStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                result = await _service.DeleteFileAsync(file.Id);
+
+                // Assert inside lock
+                Assert.False(result);
+                Assert.True(File.Exists(fullPath));
+                Assert.Single(_context.UploadedFiles);
+                Assert.Equal(file.Id, _context.UploadedFiles.Single().Id);
+            }
+
+            Assert.True(File.Exists(fullPath));
+        }
     }
 }

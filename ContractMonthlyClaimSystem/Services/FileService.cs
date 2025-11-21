@@ -95,5 +95,47 @@ namespace ContractMonthlyClaimSystem.Services
 
             return (decryptingStream, contentType, file.FileName);
         }
+
+        public async Task<bool> DeleteFileAsync(int fileId)
+        {
+            var file = await _context.UploadedFiles.FindAsync(fileId);
+            if (file == null)
+                return false; // Can't find file ..
+
+            // Remove file from db
+            _context.UploadedFiles.Remove(file);
+            await _context.SaveChangesAsync();
+
+            // Figure out file path
+            var relativePath = file.FilePath.TrimStart(
+                Path.DirectorySeparatorChar,
+                Path.AltDirectorySeparatorChar
+            );
+            var filePath = Path.Combine(_env.WebRootPath, relativePath);
+            if (!File.Exists(filePath))
+                return true; // File doesn't exist ..
+
+            // Delete file
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch { // Delete failed
+                // Add file back to db
+                _context.UploadedFiles.Add(file);
+                await _context.SaveChangesAsync();
+                return false;
+            }
+
+            if (File.Exists(filePath))
+            {// Delete failed
+                // Add file back to db
+                _context.UploadedFiles.Add(file);
+                await _context.SaveChangesAsync();
+                return false;
+            }
+
+            return true;
+        }
     }
 }

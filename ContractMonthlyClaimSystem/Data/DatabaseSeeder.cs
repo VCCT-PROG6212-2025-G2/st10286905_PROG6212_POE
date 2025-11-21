@@ -6,10 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ContractMonthlyClaimSystem.Data
 {
-    public class DatabaseSeeder(IUserService userService, AppDbContext context)
+    public class DatabaseSeeder(IUserService userService, AppDbContext context, IFileService fileService)
     {
         private readonly IUserService _userService = userService;
         private readonly AppDbContext _context = context;
+        private readonly IFileService _fileService = fileService;
 
         public async Task SeedAsync()
         {
@@ -103,6 +104,41 @@ namespace ContractMonthlyClaimSystem.Data
                     _context.LecturerModules.Add(lecturerModule);
             }
 
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task NukeInvoicesAsync()
+        {
+            var invoices = _context.ClaimInvoiceDocuments.ToList();
+            foreach (var invoice in invoices)
+            {
+                await _fileService.DeleteFileAsync(invoice.UploadedFileId);
+                var foundInvoice = await _context.ClaimInvoiceDocuments.FindAsync(invoice.ClaimId);
+                if (foundInvoice != null)
+                {
+                    _context.ClaimInvoiceDocuments.Remove(foundInvoice);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        public async Task UnreviewClaimsAsync()
+        {
+            var claims = _context.ContractClaims.ToList();
+            foreach (var claim in claims)
+            {
+                claim.ProgramCoordinatorUserId = null;
+                claim.ProgramCoordinatorComment = null;
+                claim.ProgramCoordinatorDecision = ClaimDecision.PENDING;
+
+                claim.AcademicManagerUserId = null;
+                claim.AcademicManagerComment = null;
+                claim.AcademicManagerDecision = ClaimDecision.PENDING;
+
+                claim.ClaimStatus = ClaimStatus.PENDING;
+
+                _context.Update(claim);
+            }
             await _context.SaveChangesAsync();
         }
     }
