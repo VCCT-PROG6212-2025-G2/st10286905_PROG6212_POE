@@ -182,14 +182,16 @@ namespace ContractMonthlyClaimSystem.Services
             // Sort rules in order of priority, so highest priority runs last and overwrites lower priority rules.
             rules = [.. rules.OrderBy(r => r.Priority)];
 
-            var pendingClaims = (await GetClaimsAsync()).Where(c =>
-                c.ClaimStatus <= ClaimStatus.PENDING_CONFIRM // Status is either PENDING_CONFIRM or less (PENDING)
-                && ( // Claim has not yet been reviewed by a relevant role
-                    (c.ProgramCoordinatorUserId == null && roles.Contains("ProgramCoordinator"))
-                    || (c.AcademicManagerUserId == null && roles.Contains("AcademicManager"))
+            var pendingClaims = (await GetClaimsAsync())
+                .Where(c =>
+                    c.ClaimStatus <= ClaimStatus.PENDING_CONFIRM // Status is either PENDING_CONFIRM or less (PENDING)
+                    && ( // Claim has not yet been reviewed by a relevant role
+                        (c.ProgramCoordinatorUserId == null && roles.Contains("ProgramCoordinator"))
+                        || (c.AcademicManagerUserId == null && roles.Contains("AcademicManager"))
+                    )
                 )
-            );
-            res.pending = pendingClaims.Count();
+                .ToList();
+            res.pending = pendingClaims.Count;
 
             if (res.pending == 0)
                 return res; // Nothing to review
