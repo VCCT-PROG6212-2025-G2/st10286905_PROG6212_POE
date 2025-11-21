@@ -112,7 +112,7 @@ namespace ContractMonthlyClaimSystem.Services
                 Path.AltDirectorySeparatorChar
             );
             var filePath = Path.Combine(_env.WebRootPath, relativePath);
-            if (!File.Exists(filePath))
+            if (!File.Exists(filePath) && !Directory.Exists(filePath))
                 return true; // File doesn't exist ..
 
             // Delete file
@@ -127,7 +127,7 @@ namespace ContractMonthlyClaimSystem.Services
                 return false;
             }
 
-            if (File.Exists(filePath))
+            if (File.Exists(filePath) || Directory.Exists(filePath))
             {// Delete failed
                 // Add file back to db
                 _context.UploadedFiles.Add(file);

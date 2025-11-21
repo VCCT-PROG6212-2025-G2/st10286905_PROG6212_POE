@@ -231,7 +231,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             {
                 FileName = "gone.txt",
                 FilePath = "uploads/gone.txt",
-                FileSize = 10
+                FileSize = 10,
             };
 
             _context.UploadedFiles.Add(file);
@@ -259,7 +259,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             {
                 FileName = "nofile.txt",
                 FilePath = "uploads/nofile.txt",
-                FileSize = 10
+                FileSize = 10,
             };
 
             _context.UploadedFiles.Add(file);
@@ -283,30 +283,29 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             {
                 FileName = "fail.txt",
                 FilePath = "uploads/fail.txt",
-                FileSize = 10
+                FileSize = 10,
             };
 
             _context.UploadedFiles.Add(file);
             await _context.SaveChangesAsync();
 
+            // Create a directory instead of a file to force delete failure
             var fullPath = Path.Combine(_root, "uploads", "fail.txt");
+
+            // This ensures the parent folder exists
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-            File.WriteAllBytes(fullPath, new byte[] { 1, 2, 3 });
 
-            bool result;
+            // Create a DIRECTORY where a FILE should be
+            Directory.CreateDirectory(fullPath);
 
-            using (var lockStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.None))
-            {
-                result = await _service.DeleteFileAsync(file.Id);
+            // Act
+            var result = await _service.DeleteFileAsync(file.Id);
 
-                // Assert inside lock
-                Assert.False(result);
-                Assert.True(File.Exists(fullPath));
-                Assert.Single(_context.UploadedFiles);
-                Assert.Equal(file.Id, _context.UploadedFiles.Single().Id);
-            }
-
-            Assert.True(File.Exists(fullPath));
+            // Assert
+            Assert.False(result); // delete should fail
+            Assert.True(Directory.Exists(fullPath)); // still exists (cannot delete)
+            Assert.Single(_context.UploadedFiles); // DB restored
+            Assert.Equal(file.Id, _context.UploadedFiles.Single().Id);
         }
     }
 }
