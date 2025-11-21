@@ -5,8 +5,12 @@ namespace ContractMonthlyClaimSystem.Services.Interfaces
 {
     public interface IUserService
     {
+        AppUser? GetUser(int id);
+        AppUser? GetUser(string? username);
+        AppUser? GetUser(ClaimsPrincipal user);
         Task<AppUser?> GetUserAsync(int id);
         Task<AppUser?> GetUserAsync(string? username);
+        Task<AppUser?> GetUserAsync(ClaimsPrincipal user);
         Task<List<AppUser>> GetAllUsersAsync();
         Task<List<AppUser>> GetAllUsersInRoleAsync(string roleName);
         Task<AppUser?> AuthenticateAsync(string username, string password);

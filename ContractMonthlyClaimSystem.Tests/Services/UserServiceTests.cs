@@ -1,4 +1,6 @@
-﻿using System.Security.Claims;
+﻿// AI Disclosure: ChatGPT assisted creating this. Link: https://chatgpt.com/s/t_6920669a02548191bc198b6f0aa38242
+
+using System.Security.Claims;
 using ContractMonthlyClaimSystem.Data;
 using ContractMonthlyClaimSystem.Models.Auth;
 using ContractMonthlyClaimSystem.Services;
@@ -21,15 +23,62 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 .Options;
 
             _context = new AppDbContext(options);
-
             _passwordMock = new Mock<IPasswordHasher>();
-
             _service = new UserService(_context, _passwordMock.Object);
         }
 
-        // -------------------------------------------------------
-        // GET USER
-        // -------------------------------------------------------
+        // ============================================================
+        // GET USER (SYNC)
+        // ============================================================
+        [Fact]
+        public void GetUser_ById_ReturnsUser()
+        {
+            var user = new AppUser { Id = 44, UserName = "id@test.com" };
+            _context.Users.Add(user);
+            _context.SaveChanges();
+
+            var result = _service.GetUser(44);
+
+            Assert.NotNull(result);
+            Assert.Equal("id@test.com", result!.UserName);
+        }
+
+        [Fact]
+        public void GetUser_ByUsername_ReturnsUser()
+        {
+            var user = new AppUser { UserName = "sync@test.com" };
+            _context.Users.Add(user);
+            _context.SaveChanges();
+
+            var result = _service.GetUser("sync@test.com");
+
+            Assert.NotNull(result);
+            Assert.Equal("sync@test.com", result!.UserName);
+        }
+
+        [Fact]
+        public void GetUser_ByClaimsPrincipal_ReturnsUser()
+        {
+            var user = new AppUser { Id = 5, UserName = "claim@test.com" };
+            _context.Users.Add(user);
+            _context.SaveChanges();
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "5"),
+                new Claim(ClaimTypes.Name, "claim@test.com"),
+            };
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+            var result = _service.GetUser(principal);
+
+            Assert.NotNull(result);
+            Assert.Equal("claim@test.com", result!.UserName);
+        }
+
+        // ============================================================
+        // GET USER (ASYNC)
+        // ============================================================
         [Fact]
         public async Task GetUserAsync_ById_ReturnsUser()
         {
@@ -56,9 +105,81 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             Assert.Equal("test@test.com", result!.UserName);
         }
 
-        // -------------------------------------------------------
+        [Fact]
+        public async Task GetUserAsync_ByClaimsPrincipal_ReturnsUser()
+        {
+            var user = new AppUser { Id = 6, UserName = "async@test.com" };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var claims = new[] { new Claim(ClaimTypes.NameIdentifier, "6") };
+
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+            var result = await _service.GetUserAsync(principal);
+
+            Assert.NotNull(result);
+            Assert.Equal("async@test.com", result!.UserName);
+        }
+
+        // ============================================================
+        // GET ALL USERS
+        // ============================================================
+        [Fact]
+        public async Task GetAllUsersAsync_ReturnsAllUsers()
+        {
+            _context.Users.Add(new AppUser { UserName = "a" });
+            _context.Users.Add(new AppUser { UserName = "b" });
+            await _context.SaveChangesAsync();
+
+            var result = await _service.GetAllUsersAsync();
+
+            Assert.Equal(2, result.Count);
+        }
+
+        [Fact]
+        public async Task GetAllUsersInRoleAsync_ReturnsOnlyMatchingUsers()
+        {
+            var admin = new AppRole { Name = "Admin" };
+            var lecturer = new AppRole { Name = "Lecturer" };
+
+            var u1 = new AppUser { UserName = "one" };
+            var u2 = new AppUser { UserName = "two" };
+
+            u1.UserRoles.Add(new AppUserRole { Role = admin });
+            u2.UserRoles.Add(new AppUserRole { Role = lecturer });
+
+            _context.Users.AddRange(u1, u2);
+            await _context.SaveChangesAsync();
+
+            var admins = await _service.GetAllUsersInRoleAsync("Admin");
+
+            Assert.Single(admins);
+            Assert.Equal("one", admins[0].UserName);
+        }
+
+        // ============================================================
+        // IS USER IN ROLE
+        // ============================================================
+        [Fact]
+        public async Task IsUserInRoleAsync_ReturnsTrue_WhenUserInRole()
+        {
+            var role = new AppRole { Name = "Lecturer" };
+            var user = new AppUser { Id = 99, UserName = "x" };
+
+            user.UserRoles.Add(new AppUserRole { User = user, Role = role });
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var result = await _service.IsUserInRoleAsync(99, "Lecturer");
+
+            Assert.True(result);
+        }
+
+        // ============================================================
         // AUTHENTICATION
-        // -------------------------------------------------------
+        // ============================================================
         [Fact]
         public async Task AuthenticateAsync_ReturnsNull_WhenUserDoesNotExist()
         {
@@ -69,13 +190,16 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         [Fact]
         public async Task AuthenticateAsync_ReturnsUser_WhenPasswordCorrect()
         {
-            var user = new AppUser { UserName = "u@test.com", PasswordHash = "HASH", PasswordSalt = "SALT" };
+            var user = new AppUser
+            {
+                UserName = "u@test.com",
+                PasswordHash = "HASH",
+                PasswordSalt = "SALT",
+            };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            _passwordMock
-                .Setup(p => p.Verify("123", "HASH", "SALT"))
-                .Returns(true);
+            _passwordMock.Setup(p => p.Verify("123", "HASH", "SALT")).Returns(true);
 
             var result = await _service.AuthenticateAsync("u@test.com", "123");
 
@@ -83,9 +207,9 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             Assert.Equal("u@test.com", result!.UserName);
         }
 
-        // -------------------------------------------------------
-        // REGISTER
-        // -------------------------------------------------------
+        // ============================================================
+        // REGISTER (ALL OVERLOADS)
+        // ============================================================
         [Fact]
         public async Task RegisterAsync_CreatesUser()
         {
@@ -103,11 +227,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         {
             _passwordMock.Setup(p => p.HashPassword("123")).Returns(("H", "S"));
 
-            var result = await _service.RegisterAsync(
-                "x@test.com",
-                "123",
-                roleName: "Lecturer"
-            );
+            var result = await _service.RegisterAsync("x@test.com", "123", roleName: "Lecturer");
 
             Assert.NotNull(result);
             Assert.Single(result!.UserRoles);
@@ -129,9 +249,49 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             Assert.Equal(2, result!.UserRoles.Count);
         }
 
-        // -------------------------------------------------------
+        [Fact]
+        public async Task RegisterAsync_WithoutRoles_SetsAllProperties()
+        {
+            _passwordMock.Setup(p => p.HashPassword("pw")).Returns(("H", "S"));
+
+            var result = await _service.RegisterAsync(
+                "new@test.com",
+                "pw",
+                email: "mail@test.com",
+                firstName: "Tom",
+                lastName: "Smith",
+                (string?)null
+            );
+
+            Assert.NotNull(result);
+            Assert.Equal("mail@test.com", result!.Email);
+            Assert.Equal("Tom", result.FirstName);
+            Assert.Equal("Smith", result.LastName);
+        }
+
+        [Fact]
+        public async Task RegisterAsync_WithRole_SetsPropertiesAndRole()
+        {
+            _passwordMock.Setup(p => p.HashPassword("pw")).Returns(("H", "S"));
+
+            var result = await _service.RegisterAsync(
+                "role@test.com",
+                "pw",
+                email: "x@test.com",
+                firstName: "A",
+                lastName: "B",
+                roleName: "Lecturer"
+            );
+
+            Assert.NotNull(result);
+            Assert.Equal("A", result!.FirstName);
+            Assert.Single(result.UserRoles);
+            Assert.Equal("Lecturer", result.UserRoles.First().Role.Name);
+        }
+
+        // ============================================================
         // ADD ROLE
-        // -------------------------------------------------------
+        // ============================================================
         [Fact]
         public async Task AddUserToRoleAsync_AddsRole()
         {
@@ -149,21 +309,23 @@ namespace ContractMonthlyClaimSystem.Tests.Services
         }
 
         [Fact]
-        public async Task AddUserToRolesAsync_AddsAllRoles()
+        public async Task AddUserToRolesAsync_AddsEachRole()
         {
-            var user = new AppUser { Id = 10, UserName = "test@test.com" };
+            var user = new AppUser { Id = 7, UserName = "roles@test.com" };
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            await _service.AddUserToRolesAsync(10, new[] { "Lecturer", "Admin" });
+            await _service.AddUserToRolesAsync(7, new[] { "Lecturer", "HR" });
 
-            var updated = await _service.GetUserAsync(10);
+            var updated = await _service.GetUserAsync(7);
+
             Assert.Equal(2, updated!.UserRoles.Count);
         }
 
-        // -------------------------------------------------------
+        // ============================================================
         // REMOVE ROLE
-        // -------------------------------------------------------
+        // ============================================================
         [Fact]
         public async Task RemoveUserFromRoleAsync_RemovesRole()
         {
@@ -172,7 +334,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             {
                 Id = 5,
                 UserName = "u",
-                UserRoles = { new AppUserRole { Role = role } }
+                UserRoles = { new AppUserRole { Role = role } },
             };
 
             _context.Users.Add(user);
@@ -196,8 +358,8 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 UserRoles =
                 {
                     new AppUserRole { Role = r1 },
-                    new AppUserRole { Role = r2 }
-                }
+                    new AppUserRole { Role = r2 },
+                },
             };
 
             _context.Users.Add(user);
@@ -209,9 +371,39 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             Assert.Empty(updated!.UserRoles);
         }
 
-        // -------------------------------------------------------
+        [Fact]
+        public async Task RemoveUserFromRolesAsync_RemovesOnlyMatchingRoles()
+        {
+            var r1 = new AppRole { Name = "Admin" };
+            var r2 = new AppRole { Name = "Lecturer" };
+            var r3 = new AppRole { Name = "HR" };
+
+            var user = new AppUser
+            {
+                Id = 31,
+                UserName = "u31",
+                UserRoles =
+                {
+                    new AppUserRole { Role = r1 },
+                    new AppUserRole { Role = r2 },
+                    new AppUserRole { Role = r3 },
+                },
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            await _service.RemoveUserFromRolesAsync(31, new[] { "Admin", "HR" });
+
+            var updated = await _service.GetUserAsync(31);
+
+            Assert.Single(updated!.UserRoles);
+            Assert.Equal("Lecturer", updated.UserRoles.First().Role.Name);
+        }
+
+        // ============================================================
         // DELETE USER
-        // -------------------------------------------------------
+        // ============================================================
         [Fact]
         public async Task DeleteUserAsync_ById_RemovesUser()
         {
@@ -238,16 +430,21 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             Assert.Empty(_context.Users);
         }
 
-        // -------------------------------------------------------
+        // ============================================================
         // CHANGE PASSWORD
-        // -------------------------------------------------------
+        // ============================================================
         [Fact]
         public async Task ChangePasswordAsync_UpdatesPassword()
         {
             _passwordMock.Setup(p => p.HashPassword("new")).Returns(("NEW", "SALT"));
             _passwordMock.Setup(p => p.Verify("old", "OLD", "SALT")).Returns(true);
 
-            var user = new AppUser { UserName = "u", PasswordHash = "OLD", PasswordSalt = "SALT" };
+            var user = new AppUser
+            {
+                UserName = "u",
+                PasswordHash = "OLD",
+                PasswordSalt = "SALT",
+            };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
@@ -257,9 +454,9 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             Assert.Equal("NEW", result!.PasswordHash);
         }
 
-        // -------------------------------------------------------
+        // ============================================================
         // UPDATE DETAILS
-        // -------------------------------------------------------
+        // ============================================================
         [Fact]
         public async Task UpdateDetailsAsync_UpdatesProperties()
         {
@@ -269,7 +466,7 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             {
                 UserName = "u",
                 PasswordHash = "H",
-                PasswordSalt = "S"
+                PasswordSalt = "S",
             };
 
             _context.Users.Add(user);
@@ -283,9 +480,9 @@ namespace ContractMonthlyClaimSystem.Tests.Services
             Assert.Equal("A", updated.FirstName);
         }
 
-        // -------------------------------------------------------
+        // ============================================================
         // CLAIMS PRINCIPAL
-        // -------------------------------------------------------
+        // ============================================================
         [Fact]
         public void BuildClaimsPrincipal_ReturnsCorrectClaims()
         {
@@ -296,8 +493,8 @@ namespace ContractMonthlyClaimSystem.Tests.Services
                 UserRoles =
                 {
                     new AppUserRole { Role = new AppRole { Name = "Admin" } },
-                    new AppUserRole { Role = new AppRole { Name = "Lecturer" } }
-                }
+                    new AppUserRole { Role = new AppRole { Name = "Lecturer" } },
+                },
             };
 
             var principal = _service.BuildClaimsPrincipal(user);

@@ -14,6 +14,25 @@ namespace ContractMonthlyClaimSystem.Services
         private readonly AppDbContext _context = context;
         private readonly IPasswordHasher _passwordHasher = passwordHasher;
 
+        public AppUser? GetUser(int id) =>
+            _context
+                .Users.Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .SingleOrDefault(u => u.Id == id);
+
+        public AppUser? GetUser(string? username) =>
+            username == null
+                ? null
+                : _context
+                    .Users.Include(u => u.UserRoles)
+                        .ThenInclude(ur => ur.Role)
+                    .SingleOrDefault(u => u.UserName == username);
+
+        public AppUser? GetUser(ClaimsPrincipal user) =>
+            int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+                ? GetUser(id)
+                : null;
+
         public async Task<AppUser?> GetUserAsync(int id) =>
             await _context
                 .Users.Include(u => u.UserRoles)
@@ -27,6 +46,11 @@ namespace ContractMonthlyClaimSystem.Services
                     .Users.Include(u => u.UserRoles)
                         .ThenInclude(ur => ur.Role)
                     .SingleOrDefaultAsync(u => u.UserName == username);
+
+        public async Task<AppUser?> GetUserAsync(ClaimsPrincipal user) =>
+            int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
+                ? await GetUserAsync(id)
+                : null;
 
         public async Task<List<AppUser>> GetAllUsersAsync() => await _context.Users.ToListAsync();
 
@@ -246,7 +270,7 @@ namespace ContractMonthlyClaimSystem.Services
             if (user == null)
                 return false;
 
-            if(_context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+            if (_context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
             {
                 _context.UserRoles.RemoveRange(user.UserRoles);
                 _context.Users.Remove(user);
